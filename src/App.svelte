@@ -1,7 +1,20 @@
 <script lang="ts">
+  import Mustache from 'mustache';
   import { autoresize } from 'svelte-textarea-autoresize';
 
-  const variablesList = [
+  type VariablesList = { name: string; value: string }[];
+
+  function render(template: string, variablesList: VariablesList): string {
+    const variables = Object.fromEntries(variablesList.map(({name,value}) => [name,value]));
+    try {
+      return Mustache.render(template, variables);
+    } catch(e) {
+      console.error(e);
+      return template;
+    }
+  }
+
+  const variablesList: VariablesList = [
     { name: 'title', value: 'ゲト博士' },
     { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
   ];
@@ -16,6 +29,7 @@
     <main>{{ せつめい }}</main>
   </body>
 </html>`;
+  $: outputHTMLText = render(templateText, variablesList);
 </script>
 
 <main>
@@ -34,7 +48,7 @@
     </div>
   </div>
   <div class=output-area>
-    <textarea readonly>{templateText}</textarea>
+    <textarea readonly>{outputHTMLText}</textarea>
   </div>
 </main>
 
