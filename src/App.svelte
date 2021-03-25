@@ -81,6 +81,9 @@
             <strong class=error>テンプレート内に変数が存在しません</strong>
             <input type=button value=削除 on:click={handleRemoveVariable(variable.name)}>
           {/if}
+          {#if variable.value === undefined}
+            <em class=info>変数を検知したため、自動で追加されました</em>
+          {/if}
         </legend>
         <textarea use:autoresize bind:value={variable.value}></textarea>
       </fieldset>
@@ -112,6 +115,12 @@
 
   strong.error {
     color: red;
+    font-size: smaller;
+  }
+
+  em.info {
+    font-style: normal;
+    color: lime;
     font-size: smaller;
   }
 
