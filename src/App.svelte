@@ -15,6 +15,10 @@
     }
   }
 
+  function existsVariableName(variableName: string, varList: VariablesList = variablesList): boolean {
+    return Boolean(varList.find(({ name }) => name === variableName));
+  }
+
   function removeEmptyVariables(): VariablesList {
     return variablesList.filter(variable => variable.value !== undefined);
   }
@@ -34,6 +38,7 @@
     <main>{{ せつめい }}</main>
   </body>
 </html>`;
+  let newVariableName = '';
 
   let definedVariableNameSet: Set<string>;
   $: {
@@ -44,7 +49,7 @@
         ...removedVariablesList,
         ...(
           [...definedVariableNameSet]
-            .filter(varName => !removedVariablesList.find(({ name }) => name === varName))
+            .filter(varName => !existsVariableName(varName, removedVariablesList))
             .map(varName => ({ name: varName }))
         ),
       ];
@@ -57,6 +62,12 @@
   const handleRemoveVariable = (variableName: string) => () => {
     variablesList = variablesList.filter(({ name }) => name !== variableName);
   };
+  const handleAddVariable = () => {
+    if (newVariableName !== '' && !existsVariableName(newVariableName)) {
+      variablesList = variablesList.concat({ name: newVariableName, value: '' });
+      newVariableName = '';
+    }
+  };
 </script>
 
 <main>
@@ -65,7 +76,7 @@
       {#each variablesList as variable}
       <fieldset>
         <legend>
-          <input type=text bind:value={variable.name}>
+          <input type=text class=variable-name bind:value={variable.name}>
           {#if !definedVariableNameSet.has(variable.name)}
             <strong class=error>テンプレート内に変数が存在しません</strong>
             <input type=button value=削除 on:click={handleRemoveVariable(variable.name)}>
@@ -74,7 +85,10 @@
         <textarea use:autoresize bind:value={variable.value}></textarea>
       </fieldset>
       {/each}
-      <p class=add-button><input type=button value=追加></p>
+      <p class=add-variables-area>
+        <input type=text class=variable-name bind:value={newVariableName} placeholder=新しい変数の名前>
+        <input type=button value=追加 on:click={handleAddVariable} disabled={newVariableName === '' || existsVariableName(newVariableName)}>
+      </p>
     </div>
     <div class=input-template-area>
       <textarea bind:value={templateText}></textarea>
@@ -101,6 +115,11 @@
     font-size: smaller;
   }
 
+  input[type=text].variable-name {
+    color: deepskyblue;
+    font-size: 75%;
+  }
+
   .input-area,
   .output-area {
     flex: 1;
@@ -125,11 +144,6 @@
   .input-variables-area fieldset:first-child,
   .input-variables-area p:first-child {
     margin-top: 0;
-  }
-
-  .input-variables-area fieldset>legend>input[type=text] {
-    color: deepskyblue;
-    font-size: 75%;
   }
 
   .input-variables-area fieldset>textarea {
