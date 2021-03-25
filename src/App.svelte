@@ -1,14 +1,18 @@
 <script lang="ts">
   import Mustache from 'mustache';
   import {getVariableNameList} from './utils/mustache'
-  import {triggerEnter} from './utils/dom'
+  import {triggerEnter,downloadFile} from './utils/dom'
   import VariableInput from './components/VariableInput.svelte';
 
   type VariableData = { name: string; value?: string, focusValue?: boolean, duplicate: boolean };
   type VariablesList = ReadonlyArray<VariableData>;
 
+  function variablesList2variablesObj(variablesList: VariablesList): Record<string, string> {
+    return Object.fromEntries(variablesList.map(({name,value}) => [name,value??'']));
+  }
+
   function render(template: string, variablesList: VariablesList): string | null {
-    const variables = Object.fromEntries(variablesList.map(({name,value}) => [name,value]));
+    const variables = variablesList2variablesObj(variablesList);
     try {
       return Mustache.render(template, variables);
     } catch(e) {
@@ -74,6 +78,10 @@
   }
   $: outputHTMLText = render(templateText, variablesList);
 
+  const handleExportVariables = () => {
+    const variables = variablesList2variablesObj(variablesList);
+    downloadFile({filename:'variables.json',contents:JSON.stringify(variables,null,2),mime:'application/json'});
+  };
   const handleRemoveVariable = (variable: VariableData) => () => {
     variablesList = findDuplicateVariables(variablesList.filter(valData => valData !== variable));
   };
@@ -97,6 +105,9 @@
       <p class=add-variables-area>
         <input type=text class=variable-name bind:value={newVariableName} placeholder=新しい変数の名前 on:keydown={triggerEnter(handleAddVariable)}>
         <input type=button value=追加 on:click={handleAddVariable} disabled={newVariableName === '' || existsVariableName(newVariableName)}>
+      </p>
+      <p class=variables-import-export-area>
+        <input type=button value=エクスポート on:click={handleExportVariables}>
       </p>
     </div>
     <div class=input-template-area>
@@ -146,13 +157,27 @@
   }
 
   .input-variables-area .variable-input,
-  .input-variables-area .add-variables-area {
+  .input-variables-area .add-variables-area,
+  .input-variables-area .variables-import-export-area {
     margin: .5em 0 0;
   }
 
   .input-variables-area .variable-input:first-child,
-  .input-variables-area .add-variables-area:first-child {
+  .input-variables-area .add-variables-area:first-child,
+  .input-variables-area .variables-import-export-area:first-child {
     margin-top: 0;
+  }
+
+  .input-variables-area .add-variables-area {
+    float: left;
+  }
+
+  .input-variables-area .variables-import-export-area {
+    float: right;
+  }
+
+  .input-variables-area .variables-import-export-area input[type=button]+input[type=button] {
+    margin-left: .5em;
   }
 
   .input-template-area {
