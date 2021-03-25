@@ -6,7 +6,10 @@
     "start": "sirv public --no-clear"
   },
   "lint-staged": {
-    "(src|public)/**": "run-s build --",
+    "(src|public)/**": [
+      "run-s build --",
+      "git add ./public/"
+    ],
     "package.json": [
       "prettier-package-json --write",
       "sort-package-json"
