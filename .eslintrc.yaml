@@ -41,6 +41,10 @@ overrides:
             constructorType.spaceAfterNewKeyword: true
             taggedTemplate.spaceBeforeLiteral: false
             typeAssertion.spaceBeforeExpression: false
+  - files: rollup.config.js
+    parserOptions:
+      ecmaVersion: 2021
+      sourceType: module
   - files: "*.ts"
     extends:
       - plugin:@typescript-eslint/recommended
@@ -49,7 +53,9 @@ overrides:
       - plugin:dprint/recommended
     parserOptions:
       sourceType: module
-      project: ./tsconfig.json
+      project:
+        - ./tsconfig.json
+        - ./types.node_modules/tsconfig.json
     rules:
       dprint/dprint:
         - error
