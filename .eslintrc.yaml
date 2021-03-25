@@ -6,7 +6,7 @@ extends:
   - plugin:promise/recommended
   - standard
 parserOptions:
-  ecmaVersion: 2017
+  ecmaVersion: 2018
 rules:
   import/newline-after-import: error
   import/no-extraneous-dependencies:
@@ -45,17 +45,14 @@ overrides:
     parserOptions:
       ecmaVersion: 2021
       sourceType: module
-  - files: "*.ts"
+  - files:
+      - "*.ts"
+      - "*.svelte"
     extends:
       - plugin:@typescript-eslint/recommended
       - plugin:import/typescript
       - standard-with-typescript
       - plugin:dprint/recommended
-    parserOptions:
-      sourceType: module
-      project:
-        - ./tsconfig.json
-        - ./types.node_modules/tsconfig.json
     rules:
       dprint/dprint:
         - error
@@ -66,6 +63,16 @@ overrides:
       promise/no-callback-in-promise: off
       # The "@typescript-eslint/strict-boolean-expressions" rule is very strict and stressful.
       "@typescript-eslint/strict-boolean-expressions": off
+  - files: "*.ts"
+    parserOptions:
+      sourceType: module
+      project:
+        - ./tsconfig.json
+        - ./types.node_modules/tsconfig.json
+  - files: "*.svelte"
+    plugins:
+      - svelte3
+    processor: svelte3/svelte3
   - files: "*.d.ts"
     rules:
       # The "no-redeclare" rule does not support namespace and function declarations of the same name.
@@ -77,3 +84,13 @@ overrides:
       # The "@ts-expect-error" comment is not allowed in TypeScript 3.8 or earlier.
       # If someone forks a type definition created in this project, the type definition will not be available in older versions of TypeScript.
       "@typescript-eslint/prefer-ts-expect-error": off
+  - files:
+      - src/**/*.ts
+      - src/**/*.svelte
+    env:
+      es6: true
+      es2021: false
+      browser: true
+      node: false
+    parserOptions:
+      ecmaVersion: 2016

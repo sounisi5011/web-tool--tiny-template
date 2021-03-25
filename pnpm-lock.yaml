@@ -14,7 +14,9 @@ devDependencies:
   eslint-plugin-import: 2.22.1_eslint@7.22.0
   eslint-plugin-node: 11.1.0_eslint@7.22.0
   eslint-plugin-promise: 4.3.1
+  eslint-plugin-svelte3: 3.1.2_eslint@7.22.0+svelte@3.35.0
   husky: 5.2.0
+  js-yaml: 4.0.0
   lint-staged: 10.5.4
   npm-run-all: 4.1.5
   prettier: 2.2.1
@@ -483,6 +485,10 @@ packages:
     dev: true
     resolution:
       integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==
+  /argparse/2.0.1:
+    dev: true
+    resolution:
+      integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==
   /array-includes/3.1.3:
     dependencies:
       call-bind: 1.0.2
@@ -989,6 +995,18 @@ packages:
       node: '>=6'
     resolution:
       integrity: sha512-bY2sGqyptzFBDLh/GMbAxfdJC+b0f23ME63FOE4+Jao0oZ3E1LEwFtWJX/1pGMJLiTtrSSern2CRM/g+dfc0eQ==
+  /eslint-plugin-svelte3/3.1.2_eslint@7.22.0+svelte@3.35.0:
+    dependencies:
+      eslint: 7.22.0
+      svelte: 3.35.0
+    dev: true
+    engines:
+      node: '>=10'
+    peerDependencies:
+      eslint: '>=6.0.0'
+      svelte: ^3.2.0
+    resolution:
+      integrity: sha512-+aGgYFC/yjhGXmBevzwICFVif8tu++C9/lRg8cE6TTS45Hw8qZ6t5wItSXVNPqnxJ212ik+bad1F0Y9A3Swo0Q==
   /eslint-scope/5.1.1:
     dependencies:
       esrecurse: 4.3.0
@@ -1610,6 +1628,13 @@ packages:
     hasBin: true
     resolution:
       integrity: sha512-okMH7OXXJ7YrN9Ok3/SXrnu4iX9yOk+25nqX4imS2npuvTYDmo/QEZoqwZkYaIDk3jVvBOTOIEgEhaLOynBS9g==
+  /js-yaml/4.0.0:
+    dependencies:
+      argparse: 2.0.1
+    dev: true
+    hasBin: true
+    resolution:
+      integrity: sha512-pqon0s+4ScYUvX30wxQi3PogGFAlUyH0awepWvwkj4jD4v+ova3RiYw8bmA6x2rDrEaj8i/oWKoRxpVNW+Re8Q==
   /json-parse-better-errors/1.0.2:
     dev: true
     resolution:
@@ -2976,7 +3001,9 @@ specifiers:
   eslint-plugin-import: ^2.22.1
   eslint-plugin-node: ^11.1.0
   eslint-plugin-promise: ^4.3.1
+  eslint-plugin-svelte3: ^3.1.2
   husky: ^5.2.0
+  js-yaml: ^4.0.0
   lint-staged: ^10.5.4
   mustache: ^4.1.0
   npm-run-all: ^4.1.5
