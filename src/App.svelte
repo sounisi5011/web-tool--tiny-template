@@ -15,8 +15,8 @@
     }
   }
 
-  function removeEmptyVariables(currentVariableName?: string): VariablesList {
-    return variablesList.filter(variable => variable.value !== undefined || variable.name === currentVariableName);
+  function removeEmptyVariables(): VariablesList {
+    return variablesList.filter(variable => variable.value !== undefined);
   }
 
   let variablesList: VariablesList = [
@@ -53,10 +53,6 @@
     }
   }
   $: outputHTMLText = render(templateText, variablesList);
-
-  const onFocusVariable = (currentVariableName: string) => () => {
-    variablesList = removeEmptyVariables(currentVariableName);
-  };
 </script>
 
 <main>
@@ -65,12 +61,12 @@
       {#each variablesList as variable}
       <fieldset>
         <legend>
-          <input type=text bind:value={variable.name} on:focus={onFocusVariable(variable.name)}>
+          <input type=text bind:value={variable.name}>
           {#if !definedVariableNameSet.has(variable.name)}
             <strong class=error>テンプレート内に変数が存在しません</strong>
           {/if}
         </legend>
-        <textarea use:autoresize bind:value={variable.value} on:focus={onFocusVariable(variable.name)}></textarea>
+        <textarea use:autoresize bind:value={variable.value}></textarea>
       </fieldset>
       {/each}
       <p class=add-button><input type=button value=追加></p>
