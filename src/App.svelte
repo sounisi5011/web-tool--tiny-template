@@ -3,7 +3,7 @@
   import { autoresize } from 'svelte-textarea-autoresize';
   import {getVariableNameList} from './utils/mustache'
 
-  type VariableData = { name: string; value?: string };
+  type VariableData = { name: string; value?: string; key: number };
   type VariablesList = ReadonlyArray<VariableData>;
 
   function render(template: string, variablesList: VariablesList): string {
@@ -20,6 +20,13 @@
       return a.name.localeCompare(b.name);
   }
 
+  function getUnusedVariableKey(varList: VariablesList = variablesList): number {
+    const keySet = new Set(varList.map(({ key }) => key));
+    let newKey=0;
+    while (keySet.has(newKey)) newKey++;
+    return newKey;
+  }
+
   function existsVariableName(variableName: string, varList: VariablesList = variablesList): boolean {
     return Boolean(varList.find(({ name }) => name === variableName));
   }
@@ -31,7 +38,7 @@
   let variablesList: VariablesList = [
     { name: 'title', value: 'ゲト博士' },
     { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
-  ];
+  ].map((data, index) => ({...data, key: index}));
   let templateText = `<!DOCTYPE html>
 <html lang="ja">
   <head>
@@ -55,7 +62,7 @@
         ...(
           [...definedVariableNameSet]
             .filter(varName => !existsVariableName(varName, removedVariablesList))
-            .map(varName => ({ name: varName }))
+            .map(varName => ({ name: varName, key: getUnusedVariableKey(removedVariablesList) }))
         ),
       ].sort(variableCmp);
     } catch(e) {
@@ -70,7 +77,7 @@
   const handleAddVariable = () => {
     if (newVariableName !== '' && !existsVariableName(newVariableName)) {
       variablesList = variablesList
-        .concat({ name: newVariableName, value: '' })
+        .concat({ name: newVariableName, value: '', key: getUnusedVariableKey() })
         .sort(variableCmp);
       newVariableName = '';
     }
@@ -80,7 +87,7 @@
 <main>
   <div class=input-area>
     <div class=input-variables-area>
-      {#each variablesList as variable}
+      {#each variablesList as variable (variable.key)}
       <fieldset>
         <legend>
           <input type=text class=variable-name bind:value={variable.name}>
