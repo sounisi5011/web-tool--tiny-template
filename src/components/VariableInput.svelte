@@ -23,9 +23,11 @@
 <fieldset>
   <legend>
     <input type=text class=variable-name bind:value={name} placeholder=変数名を入力 on:keydown={triggerEnter(focusValueInput)}>
-    {#if !defined || duplicate}
+    {#if name === '' || !defined || duplicate}
       <strong class=error>
-        {#if duplicate}
+        {#if name === ''}
+          変数名が入力されていません
+        {:else if duplicate}
           同じ名前の変数が定義されています
         {:else if !defined}
           テンプレート内に変数が存在しません
