@@ -116,8 +116,9 @@
   }
 
   .input-variables-area {
-    flex: 1;
+    height: 30%;
     overflow-y: auto;
+    resize: vertical;
     padding: .5em;
   }
 
@@ -132,7 +133,7 @@
   }
 
   .input-template-area {
-    flex: 2;
+    flex: 1;
   }
 
   .input-template-area textarea,
