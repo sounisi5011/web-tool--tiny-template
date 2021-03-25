@@ -16,6 +16,66 @@
   <textarea readonly>{templateText}</textarea>
 </div>
 
+<style>
+  :global(html), :global(body) {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+
+  :global(body) {
+    display: flex;
+  }
+
+  .input-area,
+  .output-area {
+    flex: 1;
+  }
+
+  .input-area {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .input-variables-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: .5em;
+  }
+
+  .input-variables-area fieldset,
+  .input-variables-area p {
+    margin: .5em 0 0;
+  }
+
+  .input-variables-area fieldset:first-child,
+  .input-variables-area p:first-child {
+    margin-top: 0;
+  }
+
+  .input-variables-area fieldset>legend>input[type=text] {
+    color: deepskyblue;
+    font-size: 75%;
+  }
+
+  .input-variables-area fieldset>input[type=text] {
+    width: 100%;
+  }
+
+  .input-template-area {
+    flex: 2;
+  }
+
+  .input-template-area textarea,
+  .output-area textarea {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    resize: none;
+    font-family: monospace;
+  }
+</style>
+
 <script>
   const variablesList = [
     { name: 'title', value: 'ゲト博士' },
