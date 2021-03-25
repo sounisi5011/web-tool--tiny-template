@@ -15,6 +15,9 @@ function replaceContainer ( Component: typeof SvelteComponent, options: Construc
   return component;
 }
 
-replaceContainer(App, {
-	target: document.getElementById('main'),
-});
+const mainElem = document.getElementById('main');
+if (mainElem) {
+  replaceContainer(App, {
+    target: mainElem,
+  });
+}
