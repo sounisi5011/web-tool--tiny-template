@@ -61,7 +61,7 @@
   }
   $: outputHTMLText = render(templateText, variablesList);
 
-  const handleRemoveVariable = (variableName: string) => {
+  const handleRemoveVariable = (variableName: string) => () => {
     variablesList = variablesList.filter(({ name }) => name !== variableName);
   };
   const handleAddVariable = () => {
@@ -77,7 +77,7 @@
     <div class=input-variables-area>
       {#each variablesList as variable}
         <div class=variable-input>
-          <VariableInput bind:name={variable.name} bind:value={variable.value} defined={definedVariableNameSet.has(variable.name)} onRemove={handleRemoveVariable} />
+          <VariableInput bind:name={variable.name} bind:value={variable.value} defined={definedVariableNameSet.has(variable.name)} on:remove={handleRemoveVariable(variable.name)} />
         </div>
       {/each}
       <p class=add-variables-area>

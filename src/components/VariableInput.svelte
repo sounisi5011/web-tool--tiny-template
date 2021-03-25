@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   import { autoresize } from 'svelte-textarea-autoresize';
   import {triggerEnter} from '../utils/dom'
 
@@ -12,7 +13,8 @@
   export let name: string;
   export let value: string | undefined;
   export let defined: boolean;
-  export let onRemove: (name: string, value: string | undefined) => void;
+
+  const dispatch = createEventDispatcher();
 </script>
 
 <fieldset>
@@ -20,7 +22,7 @@
     <input type=text class=variable-name bind:value={name} on:keydown={triggerEnter(focusValueInput)}>
     {#if !defined}
       <strong class=error>テンプレート内に変数が存在しません</strong>
-      <input type=button value=削除 on:click={() => onRemove(name, value)}>
+      <input type=button value=削除 on:click={() => dispatch('remove')}>
     {/if}
     {#if value === undefined}
       <em class=info>変数を検知したため、自動で追加されました</em>
