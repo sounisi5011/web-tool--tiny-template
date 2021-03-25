@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { autoresize } from 'svelte-textarea-autoresize';
   import {triggerEnter} from '../utils/dom'
+  import { focus } from '../utils/svelte/action'
 
   let valueInputElem: HTMLTextAreaElement;
 
@@ -13,6 +14,7 @@
   export let name: string;
   export let value: string | undefined;
   export let defined: boolean;
+  export let autofocusValue: boolean = false;
 
   const dispatch = createEventDispatcher();
 </script>
@@ -28,7 +30,7 @@
       <em class=info>変数を検知したため、自動で追加されました</em>
     {/if}
   </legend>
-  <textarea use:autoresize bind:value={value} bind:this={valueInputElem}></textarea>
+  <textarea use:autoresize bind:value={value} bind:this={valueInputElem} use:focus={[autofocusValue, () => autofocusValue = false]}></textarea>
 </fieldset>
 
 <style>

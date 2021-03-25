@@ -4,7 +4,7 @@
   import {triggerEnter} from './utils/dom'
   import VariableInput from './components/VariableInput.svelte';
 
-  type VariableData = { name: string; value?: string };
+  type VariableData = { name: string; value?: string, focusValue?: boolean };
   type VariablesList = ReadonlyArray<VariableData>;
 
   function render(template: string, variablesList: VariablesList): string {
@@ -64,9 +64,10 @@
   const handleRemoveVariable = (variableName: string) => () => {
     variablesList = variablesList.filter(({ name }) => name !== variableName);
   };
-  const handleAddVariable = () => {
+  const handleAddVariable = (event: MouseEvent | KeyboardEvent) => {
+    event.preventDefault();
     if (newVariableName !== '' && !existsVariableName(newVariableName)) {
-      variablesList = variablesList.concat({ name: newVariableName, value: '' });
+      variablesList = variablesList.concat({ name: newVariableName, value: '', focusValue: true });
       newVariableName = '';
     }
   };
@@ -77,7 +78,7 @@
     <div class=input-variables-area>
       {#each variablesList as variable}
         <div class=variable-input>
-          <VariableInput bind:name={variable.name} bind:value={variable.value} defined={definedVariableNameSet.has(variable.name)} on:remove={handleRemoveVariable(variable.name)} />
+          <VariableInput bind:name={variable.name} bind:value={variable.value} bind:autofocusValue={variable.focusValue} defined={definedVariableNameSet.has(variable.name)} on:remove={handleRemoveVariable(variable.name)} />
         </div>
       {/each}
       <p class=add-variables-area>
