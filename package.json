@@ -4,7 +4,9 @@
     "dev": "rollup -c -w",
     "prepare": "husky install",
     "start": "sirv public --no-clear",
-    "validate": "svelte-check"
+    "validate": "run-p validate:*",
+    "validate:svelte": "svelte-check",
+    "validate:tsc": "tsc --noEmit"
   },
   "lint-staged": {
     "(src|public)/**": [
