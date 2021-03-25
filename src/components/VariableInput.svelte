@@ -14,6 +14,7 @@
   export let name: string;
   export let value: string | undefined;
   export let defined: boolean;
+  export let duplicate = false;
   export let autofocusValue: boolean = false;
 
   const dispatch = createEventDispatcher();
@@ -22,8 +23,14 @@
 <fieldset>
   <legend>
     <input type=text class=variable-name bind:value={name} on:keydown={triggerEnter(focusValueInput)}>
-    {#if !defined}
-      <strong class=error>テンプレート内に変数が存在しません</strong>
+    {#if !defined || duplicate}
+      <strong class=error>
+        {#if duplicate}
+          同じ名前の変数が定義されています
+        {:else if !defined}
+          テンプレート内に変数が存在しません
+        {/if}
+      </strong>
       <input type=button value=削除 on:click={() => dispatch('remove')}>
     {/if}
     {#if value === undefined}

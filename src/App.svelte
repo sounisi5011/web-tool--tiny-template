@@ -4,7 +4,7 @@
   import {triggerEnter} from './utils/dom'
   import VariableInput from './components/VariableInput.svelte';
 
-  type VariableData = { name: string; value?: string, focusValue?: boolean };
+  type VariableData = { name: string; value?: string, focusValue?: boolean, duplicate: boolean };
   type VariablesList = ReadonlyArray<VariableData>;
 
   function render(template: string, variablesList: VariablesList): string | null {
@@ -25,10 +25,23 @@
     return variablesList.filter(variable => variable.value !== undefined);
   }
 
-  let variablesList: VariablesList = [
+  function findDuplicateVariables(variablesList: ReadonlyArray<Omit<VariableData, 'duplicate'>>): VariablesList {
+    const nameMap = new Map<string, Set<Omit<VariableData, 'duplicate'>>>();
+    for (const variable of variablesList) {
+      const objSet = nameMap.get(variable.name) ?? new Set();
+      objSet.add(variable);
+      nameMap.set(variable.name, objSet);
+    }
+    return variablesList.map(variable => {
+      const size = nameMap.get(variable.name)?.size ?? 1;
+      return { ...variable, duplicate: 1 < size };
+    });
+  }
+
+  let variablesList: VariablesList = findDuplicateVariables([
     { name: 'title', value: 'ゲト博士' },
     { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
-  ];
+  ]);
   let templateText = `<!DOCTYPE html>
 <html lang="ja">
   <head>
@@ -47,27 +60,27 @@
     try {
       definedVariableNameSet = new Set(getVariableNameList(templateText));
       const removedVariablesList = removeEmptyVariables();
-      variablesList = [
+      variablesList = findDuplicateVariables([
         ...removedVariablesList,
         ...(
           [...definedVariableNameSet]
             .filter(varName => !existsVariableName(varName, removedVariablesList))
             .map(varName => ({ name: varName }))
         ),
-      ];
+      ]);
     } catch(e) {
       console.error(e);
     }
   }
   $: outputHTMLText = render(templateText, variablesList);
 
-  const handleRemoveVariable = (variableName: string) => () => {
-    variablesList = variablesList.filter(({ name }) => name !== variableName);
+  const handleRemoveVariable = (variable: VariableData) => () => {
+    variablesList = findDuplicateVariables(variablesList.filter(valData => valData !== variable));
   };
   const handleAddVariable = (event: MouseEvent | KeyboardEvent) => {
     event.preventDefault();
     if (newVariableName !== '' && !existsVariableName(newVariableName)) {
-      variablesList = variablesList.concat({ name: newVariableName, value: '', focusValue: true });
+      variablesList = variablesList.concat({ name: newVariableName, value: '', duplicate: false, focusValue: true });
       newVariableName = '';
     }
   };
@@ -78,7 +91,7 @@
     <div class=input-variables-area>
       {#each variablesList as variable}
         <div class=variable-input>
-          <VariableInput bind:name={variable.name} bind:value={variable.value} bind:autofocusValue={variable.focusValue} defined={definedVariableNameSet.has(variable.name)} on:remove={handleRemoveVariable(variable.name)} />
+          <VariableInput bind:name={variable.name} bind:value={variable.value} bind:autofocusValue={variable.focusValue} defined={definedVariableNameSet.has(variable.name)} duplicate={variable.duplicate} on:remove={handleRemoveVariable(variable)} />
         </div>
       {/each}
       <p class=add-variables-area>
