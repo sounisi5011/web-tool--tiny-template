@@ -15,16 +15,6 @@
     "validate:svelte": "svelte-check",
     "validate:tsc": "tsc --noEmit"
   },
-  "lint-staged": {
-    "(src|public)/**": [
-      "run-s build --",
-      "git add ./public/"
-    ],
-    "package.json": [
-      "prettier-package-json --write",
-      "sort-package-json"
-    ]
-  },
   "dependencies": {
     "mustache": "^4.1.0"
   },
