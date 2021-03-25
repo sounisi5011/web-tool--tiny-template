@@ -1,7 +1,8 @@
 <script lang="ts">
   import Mustache from 'mustache';
-  import { autoresize } from 'svelte-textarea-autoresize';
   import {getVariableNameList} from './utils/mustache'
+  import {triggerEnter} from './utils/dom'
+  import VariableInput from './components/VariableInput.svelte';
 
   type VariableData = { name: string; value?: string };
   type VariablesList = ReadonlyArray<VariableData>;
@@ -60,7 +61,7 @@
   }
   $: outputHTMLText = render(templateText, variablesList);
 
-  const handleRemoveVariable = (variableName: string) => () => {
+  const handleRemoveVariable = (variableName: string) => {
     variablesList = variablesList.filter(({ name }) => name !== variableName);
   };
   const handleAddVariable = () => {
@@ -75,22 +76,12 @@
   <div class=input-area>
     <div class=input-variables-area>
       {#each variablesList as variable}
-      <fieldset>
-        <legend>
-          <input type=text class=variable-name bind:value={variable.name}>
-          {#if !definedVariableNameSet.has(variable.name)}
-            <strong class=error>テンプレート内に変数が存在しません</strong>
-            <input type=button value=削除 on:click={handleRemoveVariable(variable.name)}>
-          {/if}
-          {#if variable.value === undefined}
-            <em class=info>変数を検知したため、自動で追加されました</em>
-          {/if}
-        </legend>
-        <textarea use:autoresize bind:value={variable.value}></textarea>
-      </fieldset>
+        <div class=variable-input>
+          <VariableInput bind:name={variable.name} bind:value={variable.value} defined={definedVariableNameSet.has(variable.name)} onRemove={handleRemoveVariable} />
+        </div>
       {/each}
       <p class=add-variables-area>
-        <input type=text class=variable-name bind:value={newVariableName} placeholder=新しい変数の名前>
+        <input type=text class=variable-name bind:value={newVariableName} placeholder=新しい変数の名前 on:keydown={triggerEnter(handleAddVariable)}>
         <input type=button value=追加 on:click={handleAddVariable} disabled={newVariableName === '' || existsVariableName(newVariableName)}>
       </p>
     </div>
@@ -114,22 +105,6 @@
     display: flex;
   }
 
-  strong.error {
-    color: red;
-    font-size: smaller;
-  }
-
-  em.info {
-    font-style: normal;
-    color: lime;
-    font-size: smaller;
-  }
-
-  input[type=text].variable-name {
-    color: deepskyblue;
-    font-size: 75%;
-  }
-
   .input-area,
   .output-area {
     flex: 1;
@@ -146,21 +121,14 @@
     padding: .5em;
   }
 
-  .input-variables-area fieldset,
-  .input-variables-area p {
+  .input-variables-area .variable-input,
+  .input-variables-area .add-variables-area {
     margin: .5em 0 0;
   }
 
-  .input-variables-area fieldset:first-child,
-  .input-variables-area p:first-child {
+  .input-variables-area .variable-input:first-child,
+  .input-variables-area .add-variables-area:first-child {
     margin-top: 0;
-  }
-
-  .input-variables-area fieldset>textarea {
-    width: 100%;
-    height: 2.5em;
-    min-height: 2.5em;
-    resize: vertical;
   }
 
   .input-template-area {
