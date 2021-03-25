@@ -158,7 +158,7 @@
       </p>
     </div>
     <div class=input-template-area>
-      <textarea bind:value={templateText} placeholder=テンプレートを入力></textarea>
+      <textarea bind:value={templateText} placeholder=テンプレートを入力 />
     </div>
     <p class=input-template-help>
       テンプレートの言語は

@@ -39,7 +39,7 @@
       <em class=info>変数を検知したため、自動で追加されました</em>
     {/if}
   </legend>
-  <textarea use:autoresize bind:value={value} placeholder=変数の値を入力 bind:this={valueInputElem} use:focus={[autofocusValue, () => autofocusValue = false]}></textarea>
+  <textarea use:autoresize bind:value={value} placeholder=変数の値を入力 bind:this={valueInputElem} use:focus={[autofocusValue, () => autofocusValue = false]} />
 </fieldset>
 
 <style>
