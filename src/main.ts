@@ -1,13 +1,14 @@
 import App from './App.svelte';
+import type { SvelteComponent } from 'svelte';
 
 /**
  * @see https://github.com/sveltejs/svelte/issues/537#issuecomment-298229185
  */
-function replaceContainer ( Component, options ) {
+function replaceContainer ( Component: typeof SvelteComponent, options: ConstructorParameters<typeof SvelteComponent>[0] ): SvelteComponent {
   const { target: targetNode} = options;
   const doc = targetNode.ownerDocument ?? (targetNode instanceof Document ? targetNode : document);
   const frag = doc.createDocumentFragment();
-  const component = new Component({ ...options, target: frag });
+  const component = new Component(Object.assign( options, { target: frag }));
 
   targetNode.replaceWith( frag );
 

@@ -78,7 +78,7 @@
   }
 </style>
 
-<script>
+<script lang="ts">
   const variablesList = [
     { name: 'title', value: 'ゲト博士' },
     { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
