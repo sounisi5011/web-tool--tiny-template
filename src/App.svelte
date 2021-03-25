@@ -153,8 +153,8 @@
         <input type=button value=追加 on:click={handleAddVariable} disabled={newVariableName === '' || existsVariableName(newVariableName)}>
       </p>
       <p class=variables-import-export-area>
-        <input type=button value=インポート on:click={handleImportVariables}>
-        <input type=button value=エクスポート on:click={handleExportVariables}>
+        <input type=button value=変数をJSONからインポート on:click={handleImportVariables}>
+        <input type=button value=変数をJSONにエクスポート on:click={handleExportVariables}>
       </p>
     </div>
     <div class=input-template-area>
