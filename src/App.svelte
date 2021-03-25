@@ -1,3 +1,21 @@
+<script lang="ts">
+  const variablesList = [
+    { name: 'title', value: 'ゲト博士' },
+    { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
+  ];
+  let templateText = `<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{{ title }}</title>
+  </head>
+  <body>
+    <main>{{ せつめい }}</main>
+  </body>
+</html>`;
+</script>
+
 <main>
   <div class=input-area>
     <div class=input-variables-area>
@@ -80,21 +98,3 @@
     font-family: monospace;
   }
 </style>
-
-<script lang="ts">
-  const variablesList = [
-    { name: 'title', value: 'ゲト博士' },
-    { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
-  ];
-  let templateText = `<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{{ title }}</title>
-  </head>
-  <body>
-    <main>{{ せつめい }}</main>
-  </body>
-</html>`;
-</script>
