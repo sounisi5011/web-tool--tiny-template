@@ -53,6 +53,10 @@
     }
   }
   $: outputHTMLText = render(templateText, variablesList);
+
+  const handleRemoveVariable = (variableName: string) => () => {
+    variablesList = variablesList.filter(({ name }) => name !== variableName);
+  };
 </script>
 
 <main>
@@ -64,6 +68,7 @@
           <input type=text bind:value={variable.name}>
           {#if !definedVariableNameSet.has(variable.name)}
             <strong class=error>テンプレート内に変数が存在しません</strong>
+            <input type=button value=削除 on:click={handleRemoveVariable(variable.name)}>
           {/if}
         </legend>
         <textarea use:autoresize bind:value={variable.value}></textarea>
