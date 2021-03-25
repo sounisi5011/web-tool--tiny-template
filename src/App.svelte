@@ -3,7 +3,7 @@
   import { autoresize } from 'svelte-textarea-autoresize';
   import {getVariableNameList} from './utils/mustache'
 
-  type VariablesList = { name: string; value: string }[];
+  type VariablesList = { name: string; value?: string }[];
 
   function render(template: string, variablesList: VariablesList): string {
     const variables = Object.fromEntries(variablesList.map(({name,value}) => [name,value]));
@@ -35,6 +35,11 @@
   $: {
     try {
       definedVariableNameSet = new Set(getVariableNameList(templateText));
+      for (const varName of definedVariableNameSet) {
+        if (!variablesList.find(({ name }) => name === varName)) {
+          variablesList.push({ name: varName });
+        }
+      }
     } catch(e) {
       console.error(e);
     }
