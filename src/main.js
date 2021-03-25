@@ -4,10 +4,12 @@ import App from './App.svelte';
  * @see https://github.com/sveltejs/svelte/issues/537#issuecomment-298229185
  */
 function replaceContainer ( Component, options ) {
-  const frag = document.createDocumentFragment();
+  const { target: targetNode} = options;
+  const doc = targetNode.ownerDocument ?? (targetNode instanceof Document ? targetNode : document);
+  const frag = doc.createDocumentFragment();
   const component = new Component({ ...options, target: frag });
 
-  options.target.replaceWith( frag );
+  targetNode.replaceWith( frag );
 
   return component;
 }
