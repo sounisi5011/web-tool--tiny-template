@@ -22,7 +22,7 @@
 
 <fieldset>
   <legend>
-    <input type=text class=variable-name bind:value={name} on:keydown={triggerEnter(focusValueInput)}>
+    <input type=text class=variable-name bind:value={name} placeholder=変数名を入力 on:keydown={triggerEnter(focusValueInput)}>
     {#if !defined || duplicate}
       <strong class=error>
         {#if duplicate}
@@ -37,7 +37,7 @@
       <em class=info>変数を検知したため、自動で追加されました</em>
     {/if}
   </legend>
-  <textarea use:autoresize bind:value={value} bind:this={valueInputElem} use:focus={[autofocusValue, () => autofocusValue = false]}></textarea>
+  <textarea use:autoresize bind:value={value} placeholder=変数の値を入力 bind:this={valueInputElem} use:focus={[autofocusValue, () => autofocusValue = false]}></textarea>
 </fieldset>
 
 <style>

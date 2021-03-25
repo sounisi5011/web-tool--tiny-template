@@ -100,7 +100,7 @@
       </p>
     </div>
     <div class=input-template-area>
-      <textarea bind:value={templateText}></textarea>
+      <textarea bind:value={templateText} placeholder=テンプレートを入力></textarea>
     </div>
   </div>
   <div class=output-area>
