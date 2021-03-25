@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { autoresize } from 'svelte-textarea-autoresize';
+
   const variablesList = [
     { name: 'title', value: 'ゲト博士' },
     { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
@@ -22,7 +24,7 @@
       {#each variablesList as variable}
       <fieldset>
         <legend><input type=text bind:value={variable.name}></legend>
-        <textarea bind:value={variable.value}></textarea>
+        <textarea use:autoresize bind:value={variable.value}></textarea>
       </fieldset>
       {/each}
       <p class=add-button><input type=button value=追加></p>
