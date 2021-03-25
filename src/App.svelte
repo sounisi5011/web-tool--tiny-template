@@ -3,7 +3,7 @@
   import { autoresize } from 'svelte-textarea-autoresize';
   import {getVariableNameList} from './utils/mustache'
 
-  type VariableData = { name: string; value?: string; key: number };
+  type VariableData = { name: string; value?: string };
   type VariablesList = ReadonlyArray<VariableData>;
 
   function render(template: string, variablesList: VariablesList): string {
@@ -14,17 +14,6 @@
       console.error(e);
       return template;
     }
-  }
-
-  function variableCmp(a: VariableData, b: VariableData): number {
-      return a.name.localeCompare(b.name);
-  }
-
-  function getUnusedVariableKey(varList: VariablesList = variablesList): number {
-    const keySet = new Set(varList.map(({ key }) => key));
-    let newKey=0;
-    while (keySet.has(newKey)) newKey++;
-    return newKey;
   }
 
   function existsVariableName(variableName: string, varList: VariablesList = variablesList): boolean {
@@ -38,7 +27,7 @@
   let variablesList: VariablesList = [
     { name: 'title', value: 'ゲト博士' },
     { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
-  ].map((data, index) => ({...data, key: index}));
+  ];
   let templateText = `<!DOCTYPE html>
 <html lang="ja">
   <head>
@@ -62,9 +51,9 @@
         ...(
           [...definedVariableNameSet]
             .filter(varName => !existsVariableName(varName, removedVariablesList))
-            .map(varName => ({ name: varName, key: getUnusedVariableKey(removedVariablesList) }))
+            .map(varName => ({ name: varName }))
         ),
-      ].sort(variableCmp);
+      ];
     } catch(e) {
       console.error(e);
     }
@@ -76,9 +65,7 @@
   };
   const handleAddVariable = () => {
     if (newVariableName !== '' && !existsVariableName(newVariableName)) {
-      variablesList = variablesList
-        .concat({ name: newVariableName, value: '', key: getUnusedVariableKey() })
-        .sort(variableCmp);
+      variablesList = variablesList.concat({ name: newVariableName, value: '' });
       newVariableName = '';
     }
   };
@@ -87,7 +74,7 @@
 <main>
   <div class=input-area>
     <div class=input-variables-area>
-      {#each variablesList as variable (variable.key)}
+      {#each variablesList as variable}
       <fieldset>
         <legend>
           <input type=text class=variable-name bind:value={variable.name}>
