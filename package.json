@@ -7,7 +7,7 @@
     "fmt:pkg": "run-s fmt:pkg:prettier fmt:pkg:sort",
     "fmt:pkg:prettier": "prettier-package-json --write ./package.json",
     "fmt:pkg:sort": "sort-package-json '**/package.json' '!**/node_modules'",
-    "fmt:xs": "validate:lint -- --fix",
+    "fmt:xs": "run-s 'validate:lint -- --fix'",
     "prepare": "husky install",
     "start": "sirv public --no-clear",
     "validate": "run-p validate:*",
