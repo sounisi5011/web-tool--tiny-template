@@ -102,6 +102,11 @@
     <div class=input-template-area>
       <textarea bind:value={templateText} placeholder=テンプレートを入力></textarea>
     </div>
+    <p class=input-template-help>
+      テンプレートの言語は
+      <a href="http://mustache.github.io/" target=_blank>Mustache</a>
+      です。
+    </p>
   </div>
   <div class=output-area>
     {#if typeof outputHTMLText === 'string'}
@@ -161,6 +166,12 @@
     height: 100%;
     resize: none;
     font-family: monospace;
+  }
+
+  .input-template-help {
+    margin: .5em 0;
+    text-align: right;
+    font-size: smaller;
   }
 
   .output-area {
