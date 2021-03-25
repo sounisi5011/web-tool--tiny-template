@@ -1,9 +1,9 @@
-dependencies:
+devDependencies:
   rollup: 2.42.4
 lockfileVersion: 5.2
 packages:
   /fsevents/2.3.2:
-    dev: false
+    dev: true
     engines:
       node: ^8.16.0 || ^10.6.0 || >=11.0.0
     optional: true
@@ -12,7 +12,7 @@ packages:
     resolution:
       integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==
   /rollup/2.42.4:
-    dev: false
+    dev: true
     engines:
       node: '>=10.0.0'
     hasBin: true
