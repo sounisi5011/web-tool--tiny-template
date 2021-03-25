@@ -4,7 +4,7 @@
       {#each [...variablesList] as variable}
       <fieldset>
         <legend><input type=text bind:value={variable.name}></legend>
-        <input type=text bind:value={variable.value}>
+        <textarea bind:value={variable.value}></textarea>
       </fieldset>
       {/each}
       <p class=add-button><input type=button value=追加></p>
@@ -60,8 +60,11 @@
     font-size: 75%;
   }
 
-  .input-variables-area fieldset>input[type=text] {
+  .input-variables-area fieldset>textarea {
     width: 100%;
+    height: 2.5em;
+    min-height: 2.5em;
+    resize: vertical;
   }
 
   .input-template-area {
