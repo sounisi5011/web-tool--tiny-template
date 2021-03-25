@@ -25,3 +25,16 @@ export function downloadFile({ filename, contents, mime }: { filename: string, c
     document.body.appendChild(aElem);
     aElem.click();
 }
+
+export function pickFile({ accept = '' }: { accept?:string }, callback: (file: File) => void) {
+    const inputElem = document.createElement('input');
+
+    inputElem.type = 'file';
+    inputElem.accept = accept;
+    inputElem.addEventListener('change', () => {
+        const file = (inputElem.files ?? [])[0];
+        if (file) callback(file);
+    });
+
+    inputElem.click();
+}

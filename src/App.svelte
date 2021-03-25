@@ -1,8 +1,9 @@
 <script lang="ts">
   import Mustache from 'mustache';
   import {getVariableNameList} from './utils/mustache'
-  import {triggerEnter,downloadFile} from './utils/dom'
+  import {triggerEnter,downloadFile,pickFile} from './utils/dom'
   import VariableInput from './components/VariableInput.svelte';
+  import {validateVariableRecord} from './utils/variable-data'
 
   type VariableData = { name: string; value?: string, focusValue?: boolean, duplicate: boolean };
   type VariablesList = ReadonlyArray<VariableData>;
@@ -78,6 +79,51 @@
   }
   $: outputHTMLText = render(templateText, variablesList);
 
+  const handleImportVariables = () => {
+    pickFile({accept:'.json'}, file => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        const { result } = reader;
+        if (typeof result !== 'string') {
+          alert(`ファイルの読み込みが失敗しました。FileReaderオブジェクトが、文字列ではない結果を返しました`);
+          return;
+        }
+
+        let data: unknown;
+        try {
+          data = JSON.parse(result);
+        } catch(error) {
+          alert(`ファイルの読み込みが失敗しました。指定されたファイルは適切なJSONではありません:\n  ${error}`);
+          return;
+        }
+
+        if (!validateVariableRecord(data)) {
+          alert(`ファイルの読み込みが失敗しました。指定されたファイルは適切なデータ形式ではありません。以下のような形式のJSONデータを指定してください:
+  {
+    "変数名1": "値",
+    "変数名2": 42,
+    "変数名3": true,
+    "変数名4": null
+  }`);
+          return;
+        }
+
+        if (confirm(`現在の変数の入力を消去し、ファイルで指定された変数で上書きします。よろしいですか？`)) {
+          variablesList = findDuplicateVariables(
+            Object.entries(data)
+              .map(([name, value]) => ({name,value:String(value)}))
+          );
+        }
+      });
+      reader.addEventListener('error', () => {
+        alert(`ファイルの読み込みが失敗しました:\n  ${reader.error}`);
+      });
+      reader.addEventListener('abort', () => {
+        alert(`ファイルの読み込みが中断されました`);
+      });
+      reader.readAsText(file);
+    });
+  };
   const handleExportVariables = () => {
     const variables = variablesList2variablesObj(variablesList);
     downloadFile({filename:'variables.json',contents:JSON.stringify(variables,null,2),mime:'application/json'});
@@ -107,6 +153,7 @@
         <input type=button value=追加 on:click={handleAddVariable} disabled={newVariableName === '' || existsVariableName(newVariableName)}>
       </p>
       <p class=variables-import-export-area>
+        <input type=button value=インポート on:click={handleImportVariables}>
         <input type=button value=エクスポート on:click={handleExportVariables}>
       </p>
     </div>
