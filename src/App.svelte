@@ -1,6 +1,7 @@
 <script lang="ts">
   import Mustache from 'mustache';
   import { autoresize } from 'svelte-textarea-autoresize';
+  import {getVariableNameList} from './utils/mustache'
 
   type VariablesList = { name: string; value: string }[];
 
@@ -29,6 +30,15 @@
     <main>{{ せつめい }}</main>
   </body>
 </html>`;
+
+  let definedVariableNameSet: Set<string>;
+  $: {
+    try {
+      definedVariableNameSet = new Set(getVariableNameList(templateText));
+    } catch(e) {
+      console.error(e);
+    }
+  }
   $: outputHTMLText = render(templateText, variablesList);
 </script>
 
@@ -37,7 +47,12 @@
     <div class=input-variables-area>
       {#each variablesList as variable}
       <fieldset>
-        <legend><input type=text bind:value={variable.name}></legend>
+        <legend>
+          <input type=text bind:value={variable.name}>
+          {#if !definedVariableNameSet.has(variable.name)}
+            <strong class=error>テンプレート内に変数が存在しません</strong>
+          {/if}
+        </legend>
         <textarea use:autoresize bind:value={variable.value}></textarea>
       </fieldset>
       {/each}
@@ -61,6 +76,11 @@
 
   main {
     display: flex;
+  }
+
+  strong.error {
+    color: red;
+    font-size: smaller;
   }
 
   .input-area,
