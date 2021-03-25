@@ -19,7 +19,7 @@
 <main>
   <div class=input-area>
     <div class=input-variables-area>
-      {#each [...variablesList] as variable}
+      {#each variablesList as variable}
       <fieldset>
         <legend><input type=text bind:value={variable.name}></legend>
         <textarea bind:value={variable.value}></textarea>
