@@ -1,29 +1,31 @@
-<div class=input-area>
-  <div class=input-variables-area>
-    {#each [...variablesList] as variable}
-    <fieldset>
-      <legend><input type=text bind:value={variable.name}></legend>
-      <input type=text bind:value={variable.value}>
-    </fieldset>
-    {/each}
-    <p class=add-button><input type=button value=追加></p>
+<main>
+  <div class=input-area>
+    <div class=input-variables-area>
+      {#each [...variablesList] as variable}
+      <fieldset>
+        <legend><input type=text bind:value={variable.name}></legend>
+        <input type=text bind:value={variable.value}>
+      </fieldset>
+      {/each}
+      <p class=add-button><input type=button value=追加></p>
+    </div>
+    <div class=input-template-area>
+      <textarea bind:value={templateText}></textarea>
+    </div>
   </div>
-  <div class=input-template-area>
-    <textarea bind:value={templateText}></textarea>
+  <div class=output-area>
+    <textarea readonly>{templateText}</textarea>
   </div>
-</div>
-<div class=output-area>
-  <textarea readonly>{templateText}</textarea>
-</div>
+</main>
 
 <style>
-  :global(html), :global(body) {
+  :global(html), :global(body), main {
     width: 100%;
     height: 100%;
     margin: 0;
   }
 
-  :global(body) {
+  main {
     display: flex;
   }
 

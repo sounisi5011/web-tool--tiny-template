@@ -1,18 +1,17 @@
 import App from './App.svelte';
 
 /**
- * @param {Node} targetNode
+ * @see https://github.com/sveltejs/svelte/issues/537#issuecomment-298229185
  */
-function removeChildren(targetNode) {
-  let childNode;
-  while (childNode = targetNode.firstChild) {
-    targetNode.removeChild(childNode);
-  }
+function replaceContainer ( Component, options ) {
+  const frag = document.createDocumentFragment();
+  const component = new Component({ ...options, target: frag });
+
+  options.target.replaceWith( frag );
+
+  return component;
 }
 
-const mainElem = document.getElementById('main');
-
-removeChildren(mainElem);
-new App({
-	target: mainElem,
+replaceContainer(App, {
+	target: document.getElementById('main'),
 });
