@@ -3,7 +3,7 @@
   import { autoresize } from 'svelte-textarea-autoresize';
   import {getVariableNameList} from './utils/mustache'
 
-  type VariablesList = { name: string; value?: string }[];
+  type VariablesList = ReadonlyArray<{ name: string; value?: string }>;
 
   function render(template: string, variablesList: VariablesList): string {
     const variables = Object.fromEntries(variablesList.map(({name,value}) => [name,value]));
@@ -15,7 +15,11 @@
     }
   }
 
-  const variablesList: VariablesList = [
+  function removeEmptyVariables(currentVariableName?: string): VariablesList {
+    return variablesList.filter(variable => variable.value !== undefined || variable.name === currentVariableName);
+  }
+
+  let variablesList: VariablesList = [
     { name: 'title', value: 'ゲト博士' },
     { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
   ];
@@ -35,16 +39,24 @@
   $: {
     try {
       definedVariableNameSet = new Set(getVariableNameList(templateText));
-      for (const varName of definedVariableNameSet) {
-        if (!variablesList.find(({ name }) => name === varName)) {
-          variablesList.push({ name: varName });
-        }
-      }
+      const removedVariablesList = removeEmptyVariables();
+      variablesList = [
+        ...removedVariablesList,
+        ...(
+          [...definedVariableNameSet]
+            .filter(varName => !removedVariablesList.find(({ name }) => name === varName))
+            .map(varName => ({ name: varName }))
+        ),
+      ];
     } catch(e) {
       console.error(e);
     }
   }
   $: outputHTMLText = render(templateText, variablesList);
+
+  const onFocusVariable = (currentVariableName: string) => () => {
+    variablesList = removeEmptyVariables(currentVariableName);
+  };
 </script>
 
 <main>
@@ -53,12 +65,12 @@
       {#each variablesList as variable}
       <fieldset>
         <legend>
-          <input type=text bind:value={variable.name}>
+          <input type=text bind:value={variable.name} on:focus={onFocusVariable(variable.name)}>
           {#if !definedVariableNameSet.has(variable.name)}
             <strong class=error>テンプレート内に変数が存在しません</strong>
           {/if}
         </legend>
-        <textarea use:autoresize bind:value={variable.value}></textarea>
+        <textarea use:autoresize bind:value={variable.value} on:focus={onFocusVariable(variable.name)}></textarea>
       </fieldset>
       {/each}
       <p class=add-button><input type=button value=追加></p>
