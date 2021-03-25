@@ -1,8 +1,8 @@
 import Mustache from 'mustache';
 
-type TemplateSpans = ReturnType<typeof Mustache['parse']>
+type TemplateSpans = ReturnType<typeof Mustache['parse']>;
 
-function getVariableNameListFromTemplateSpans(templateSpans: TemplateSpans) {
+function getVariableNameListFromTemplateSpans(templateSpans: TemplateSpans): string[] {
     return templateSpans
         .reduce<string[]>((variableNameList, [type, value, _startIndex, _endIndex, subTokens]) => {
             if (type === 'name' || type === '&' || type === '#' || type === '^') {
