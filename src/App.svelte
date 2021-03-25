@@ -3,7 +3,8 @@
   import { autoresize } from 'svelte-textarea-autoresize';
   import {getVariableNameList} from './utils/mustache'
 
-  type VariablesList = ReadonlyArray<{ name: string; value?: string }>;
+  type VariableData = { name: string; value?: string };
+  type VariablesList = ReadonlyArray<VariableData>;
 
   function render(template: string, variablesList: VariablesList): string {
     const variables = Object.fromEntries(variablesList.map(({name,value}) => [name,value]));
@@ -13,6 +14,10 @@
       console.error(e);
       return template;
     }
+  }
+
+  function variableCmp(a: VariableData, b: VariableData): number {
+      return a.name.localeCompare(b.name);
   }
 
   function existsVariableName(variableName: string, varList: VariablesList = variablesList): boolean {
@@ -52,7 +57,7 @@
             .filter(varName => !existsVariableName(varName, removedVariablesList))
             .map(varName => ({ name: varName }))
         ),
-      ];
+      ].sort(variableCmp);
     } catch(e) {
       console.error(e);
     }
@@ -64,7 +69,9 @@
   };
   const handleAddVariable = () => {
     if (newVariableName !== '' && !existsVariableName(newVariableName)) {
-      variablesList = variablesList.concat({ name: newVariableName, value: '' });
+      variablesList = variablesList
+        .concat({ name: newVariableName, value: '' })
+        .sort(variableCmp);
       newVariableName = '';
     }
   };
