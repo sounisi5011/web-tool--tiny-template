@@ -20,6 +20,10 @@
 
     /* Module Resolution Options */
     "moduleResolution": "Node",
+    "baseUrl": "./",
+    "paths": {
+      "*": ["./types.node_modules/*"]
+    },
     "esModuleInterop": true,
 
     /* Advanced Options */
