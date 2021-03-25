@@ -7,13 +7,13 @@
   type VariableData = { name: string; value?: string, focusValue?: boolean };
   type VariablesList = ReadonlyArray<VariableData>;
 
-  function render(template: string, variablesList: VariablesList): string {
+  function render(template: string, variablesList: VariablesList): string | null {
     const variables = Object.fromEntries(variablesList.map(({name,value}) => [name,value]));
     try {
       return Mustache.render(template, variables);
     } catch(e) {
       console.error(e);
-      return template;
+      return null;
     }
   }
 
@@ -91,7 +91,11 @@
     </div>
   </div>
   <div class=output-area>
-    <textarea readonly>{outputHTMLText}</textarea>
+    {#if typeof outputHTMLText === 'string'}
+      <textarea readonly value={outputHTMLText} />
+    {:else}
+      <strong class=error>テンプレートの変換が失敗しました。</strong>
+    {/if}
   </div>
 </main>
 
@@ -144,5 +148,15 @@
     height: 100%;
     resize: none;
     font-family: monospace;
+  }
+
+  .output-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .output-area strong.error {
+    color: red;
   }
 </style>
