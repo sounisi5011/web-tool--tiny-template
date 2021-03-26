@@ -72,6 +72,9 @@ overrides:
             <<: *dprint-config
             indentWidth: 4
   - files: "*.svelte"
+    extends:
+      # Use "prettier-plugin-svelte" to disable all rules that conflict with Prettier.
+      - prettier
     plugins:
       - svelte3
     processor: svelte3/svelte3
