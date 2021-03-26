@@ -1,8 +1,8 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { autoresize } from 'svelte-textarea-autoresize';
-  import {triggerEnter} from '../utils/dom'
-  import { focus } from '../utils/svelte/action'
+  import { triggerEnter } from '../utils/dom';
+  import { focus } from '../utils/svelte/action';
 
   let valueInputElem: HTMLTextAreaElement;
 
@@ -22,9 +22,15 @@
 
 <fieldset>
   <legend>
-    <input type=text class=variable-name bind:value={name} placeholder=変数名を入力 on:keydown={triggerEnter(focusValueInput)}>
+    <input
+      type="text"
+      class="variable-name"
+      bind:value={name}
+      placeholder="変数名を入力"
+      on:keydown={triggerEnter(focusValueInput)}
+    />
     {#if name === '' || !defined || duplicate}
-      <strong class=error>
+      <strong class="error">
         {#if name === ''}
           変数名が入力されていません
         {:else if duplicate}
@@ -33,17 +39,23 @@
           テンプレート内に変数が存在しません
         {/if}
       </strong>
-      <input type=button value=削除 on:click={() => dispatch('remove')}>
+      <input type="button" value="削除" on:click={() => dispatch('remove')} />
     {/if}
     {#if value === undefined}
-      <em class=info>変数を検知したため、自動で追加されました</em>
+      <em class="info">変数を検知したため、自動で追加されました</em>
     {/if}
   </legend>
-  <textarea use:autoresize bind:value={value} placeholder=変数の値を入力 bind:this={valueInputElem} use:focus={[autofocusValue, () => autofocusValue = false]} />
+  <textarea
+    use:autoresize
+    bind:value
+    placeholder="変数の値を入力"
+    bind:this={valueInputElem}
+    use:focus={[autofocusValue, () => (autofocusValue = false)]}
+  />
 </fieldset>
 
 <style>
-  :global(input[type=text].variable-name) {
+  :global(input[type='text'].variable-name) {
     color: deepskyblue;
     font-size: 75%;
   }
@@ -63,7 +75,7 @@
     margin: 0;
   }
 
-  fieldset>textarea {
+  fieldset > textarea {
     width: 100%;
     height: 2.5em;
     min-height: 2.5em;
