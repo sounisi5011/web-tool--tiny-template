@@ -179,6 +179,9 @@
       newVariableName = '';
     }
   };
+  const handleSelectAll = (event: { currentTarget: HTMLTextAreaElement }) => {
+    event.currentTarget.select();
+  };
 </script>
 
 <main>
@@ -236,7 +239,7 @@
   </div>
   <div class="output-area">
     {#if typeof outputHTMLText === 'string'}
-      <textarea readonly value={outputHTMLText} />
+      <textarea readonly value={outputHTMLText} on:focus={handleSelectAll} />
     {:else}
       <strong class="error">テンプレートの変換が失敗しました。</strong>
     {/if}
