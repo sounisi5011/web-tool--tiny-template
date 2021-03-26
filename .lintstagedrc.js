@@ -35,7 +35,7 @@ module.exports = {
     /** @type {string[]} */
     const commands = [];
 
-    const prettierTargetFiles = filenames.filter(extFilter('json', 'yaml', 'yml'));
+    const prettierTargetFiles = filenames.filter(extFilter('json', 'yaml', 'yml', 'svelte'));
     if (prettierTargetFiles.length >= 1) {
       commands.push(
         `prettier --write ${prettierTargetFiles.join(' ')}`,
@@ -50,10 +50,10 @@ module.exports = {
       );
     }
 
-    const tsOrJsFiles = filenames.filter(extFilter('ts', 'js'));
-    if (tsOrJsFiles.length >= 1) {
+    const eslintTargetFiles = filenames.filter(extFilter('ts', 'js', 'svelte'));
+    if (eslintTargetFiles.length >= 1) {
       commands.push(
-        `eslint --fix ${tsOrJsFiles.join(' ')}`,
+        `eslint --fix ${eslintTargetFiles.join(' ')}`,
       );
     }
 
