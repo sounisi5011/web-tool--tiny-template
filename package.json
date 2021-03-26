@@ -14,9 +14,9 @@
     "lint:prettier": "prettier --check '**/*.svelte'",
     "prepare": "husky install",
     "start": "sirv public --no-clear",
-    "validate": "run-p validate:* lint",
-    "validate:svelte": "svelte-check",
-    "validate:tsc": "tsc --noEmit"
+    "test": "run-p test:* lint",
+    "test:svelte": "svelte-check",
+    "test:tsc": "tsc --noEmit"
   },
   "dependencies": {
     "mustache": "^4.1.0"
