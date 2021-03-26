@@ -78,6 +78,13 @@ overrides:
     plugins:
       - svelte3
     processor: svelte3/svelte3
+    rules:
+      # Disabled these rules that do not work correctly together with "eslint-plugin-svelte3".
+      # see https://github.com/sveltejs/eslint-plugin-svelte3/blob/v3.1.2/OTHER_PLUGINS.md#eslint-plugin-import
+      import/first: off
+      import/no-duplicates: off
+      import/no-mutable-exports: off
+      import/no-unresolved: off
   - files: "*.d.ts"
     rules:
       # The "no-redeclare" rule does not support namespace and function declarations of the same name.
