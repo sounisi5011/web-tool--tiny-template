@@ -1,4 +1,15 @@
 {
+  "private": "true",
+  "homepage": "https://sounisi5011.github.io/web-tool--tiny-template/",
+  "bugs": {
+    "url": "https://github.com/sounisi5011/web-tool--tiny-template/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sounisi5011/web-tool--tiny-template.git"
+  },
+  "license": "MIT",
+  "author": "sounisi5011",
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
