@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { autoresize } from 'svelte-textarea-autoresize';
+
   import { triggerEnter } from '../utils/dom';
   import { focus } from '../utils/svelte/action';
 
@@ -15,7 +16,7 @@
   export let value: string | undefined;
   export let defined: boolean;
   export let duplicate = false;
-  export let autofocusValue: boolean = false;
+  export let autofocusValue = false;
 
   const dispatch = createEventDispatcher();
 </script>

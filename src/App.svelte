@@ -1,8 +1,9 @@
 <script lang="ts">
   import Mustache from 'mustache';
-  import { getVariableNameList } from './utils/mustache';
-  import { triggerEnter, downloadFile, pickFile } from './utils/dom';
+
   import VariableInput from './components/VariableInput.svelte';
+  import { triggerEnter, downloadFile, pickFile } from './utils/dom';
+  import { getVariableNameList } from './utils/mustache';
   import { validateVariableRecord } from './utils/variable-data';
 
   type VariableData = {
@@ -56,7 +57,7 @@
     }
     return variablesList.map((variable) => {
       const size = nameMap.get(variable.name)?.size ?? 1;
-      return { ...variable, duplicate: 1 < size };
+      return { ...variable, duplicate: size > 1 };
     });
   }
 
@@ -94,6 +95,8 @@
       console.error(e);
     }
   }
+
+  let outputHTMLText: ReturnType<typeof render>;
   $: outputHTMLText = render(templateText, variablesList);
 
   const handleImportVariables = () => {
