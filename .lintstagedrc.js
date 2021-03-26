@@ -57,10 +57,10 @@ module.exports = {
       );
     }
 
-    if (filenames.some(filename => startsWith(filename, 'src') || startsWith(filename, 'public'))) {
+    if (filenames.some(filename => startsWith(filename, 'src') || startsWith(filename, 'docs'))) {
       commands.push(
         'run-s build',
-        'git add ./public/',
+        'git add ./docs/',
       );
     }
 

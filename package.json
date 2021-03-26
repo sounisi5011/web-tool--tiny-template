@@ -25,7 +25,7 @@
     "lint:eslint": "eslint --cache ./",
     "lint:prettier": "prettier --check '**/*.svelte'",
     "prepare": "husky install",
-    "start": "sirv public --no-clear",
+    "start": "sirv ./docs/ --no-clear",
     "test": "run-p test:* lint",
     "test:svelte": "svelte-check",
     "test:tsc": "tsc --noEmit"
