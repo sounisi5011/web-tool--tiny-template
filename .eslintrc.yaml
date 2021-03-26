@@ -85,6 +85,12 @@ overrides:
       import/no-duplicates: off
       import/no-mutable-exports: off
       import/no-unresolved: off
+      # Svelte is the file to be compiled.
+      # There is nothing wrong with importing packages listed in devDependencies.
+      import/no-extraneous-dependencies:
+        - error
+        - devDependencies: true
+
   - files: "*.d.ts"
     rules:
       # The "no-redeclare" rule does not support namespace and function declarations of the same name.
