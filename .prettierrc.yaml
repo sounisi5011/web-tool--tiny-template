@@ -1,0 +1,11 @@
+plugins:
+  - prettier-plugin-svelte
+svelteStrictMode: false
+svelteAllowShorthand: false
+svelteBracketNewLine: true
+svelteIndentScriptAndStyle: true
+overrides:
+  - files: "*.svelte"
+    options:
+      singleQuote: true
+      trailingComma: all

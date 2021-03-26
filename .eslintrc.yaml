@@ -1,0 +1,114 @@
+extends:
+  - eslint:recommended
+  - plugin:import/recommended
+  - plugin:import/errors
+  - plugin:import/warnings
+  - plugin:promise/recommended
+  - standard
+parserOptions:
+  ecmaVersion: 2018
+rules:
+  import/newline-after-import: error
+  import/no-extraneous-dependencies:
+    - error
+    - devDependencies:
+        - "*"
+        - ".*"
+  import/order:
+    - error
+    - groups:
+        - builtin
+        - [external, internal]
+        - [parent, sibling, index]
+        - unknown
+      newlines-between: always
+      alphabetize:
+        order: asc
+        caseInsensitive: true
+overrides:
+  - files: "*.js"
+    extends:
+      - plugin:dprint/recommended
+    rules:
+      dprint/dprint:
+        - error
+        - config: &dprint-config
+            indentWidth: 2
+            quoteStyle: preferSingle
+            singleBodyPosition: sameLine
+            typeParameters.trailingCommas: never
+            arrowFunction.useParentheses: preferNone
+            constructorType.spaceAfterNewKeyword: true
+            taggedTemplate.spaceBeforeLiteral: false
+            typeAssertion.spaceBeforeExpression: false
+  - files: rollup.config.js
+    parserOptions:
+      ecmaVersion: 2021
+      sourceType: module
+  - files:
+      - "*.ts"
+      - "*.svelte"
+    extends:
+      - plugin:@typescript-eslint/recommended
+      - plugin:import/typescript
+      - standard-with-typescript
+    rules:
+      # I don't want to use "nodeify" package.
+      promise/no-callback-in-promise: off
+      # The "@typescript-eslint/strict-boolean-expressions" rule is very strict and stressful.
+      "@typescript-eslint/strict-boolean-expressions": off
+  - files: "*.ts"
+    parserOptions:
+      sourceType: module
+      project:
+        - ./tsconfig.json
+        - ./types.node_modules/tsconfig.json
+    extends:
+      - plugin:dprint/recommended
+    rules:
+      dprint/dprint:
+        - error
+        - config:
+            <<: *dprint-config
+            indentWidth: 4
+  - files: "*.svelte"
+    extends:
+      # Use "prettier-plugin-svelte" to disable all rules that conflict with Prettier.
+      - prettier
+    plugins:
+      - svelte3
+    processor: svelte3/svelte3
+    rules:
+      # Disabled these rules that do not work correctly together with "eslint-plugin-svelte3".
+      # see https://github.com/sveltejs/eslint-plugin-svelte3/blob/v3.1.2/OTHER_PLUGINS.md#eslint-plugin-import
+      import/first: off
+      import/no-duplicates: off
+      import/no-mutable-exports: off
+      import/no-unresolved: off
+      # Svelte is the file to be compiled.
+      # There is nothing wrong with importing packages listed in devDependencies.
+      import/no-extraneous-dependencies:
+        - error
+        - devDependencies: true
+
+  - files: "*.d.ts"
+    rules:
+      # The "no-redeclare" rule does not support namespace and function declarations of the same name.
+      # example:
+      #   declare function foo(): void;
+      #   declare namespace foo { ... } // ESLint: error 'foo' is already defined
+      # In addition, as of 2020/06/11, there is no alternative to the "no-redeclare" rule in "@typescript-eslint"
+      no-redeclare: off
+      # The "@ts-expect-error" comment is not allowed in TypeScript 3.8 or earlier.
+      # If someone forks a type definition created in this project, the type definition will not be available in older versions of TypeScript.
+      "@typescript-eslint/prefer-ts-expect-error": off
+  - files:
+      - src/**/*.ts
+      - src/**/*.svelte
+    env:
+      es6: true
+      es2021: false
+      browser: true
+      node: false
+    parserOptions:
+      ecmaVersion: 2016
