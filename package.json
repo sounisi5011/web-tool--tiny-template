@@ -13,7 +13,7 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "fmt": "npm-run-all -p fmt:{config,pkg} -s fmt:{prettier,eslint}",
+    "fmt": "npm-run-all -p fmt:{config,pkg} -s fmt:{prettier,eslint,prettier}",
     "fmt:config": "prettier --write '**/*.{json,yaml,yml}' '!**/package.json'",
     "fmt:eslint": "run-s 'lint:eslint -- --fix'",
     "fmt:pkg": "run-s fmt:pkg:prettier fmt:pkg:sort",
