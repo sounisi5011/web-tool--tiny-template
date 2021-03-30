@@ -57,6 +57,16 @@ module.exports = {
       );
     }
 
+    /*
+     * ESLintは整形してくれないため、ESLintの処理後にもう一度整形を試みる
+     */
+    const svelteFiles = filenames.filter(extFilter('svelte'));
+    if (svelteFiles.length >= 1) {
+      commands.push(
+        `prettier --write ${svelteFiles.join(' ')}`,
+      );
+    }
+
     if (filenames.some(filename => startsWith(filename, 'src') || startsWith(filename, 'docs'))) {
       commands.push(
         'run-s build',
