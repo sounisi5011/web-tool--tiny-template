@@ -329,6 +329,7 @@
 
   .input-template-area {
     flex: 1;
+    overflow-y: auto;
   }
 
   .input-template-area :global(.editor),
