@@ -9,23 +9,23 @@ CodeMirror.defineSimpleMode('mustache-tags', {
         { regex: /\{\{/, push: 'mustache', token: 'bracket' },
     ],
     mustache_raw: [
-        { regex: /\}\}\}/, pop: true, token: 'bracket' },
+        { regex: /\}{3}/, pop: true, token: 'bracket' },
 
         // Variable
-        { regex: /(?:(?!\}\}).)+/, token: 'variable' },
+        { regex: /(?!\}{3})\S(?:\s*(?!\}{3})\S)*/, token: 'variable-2' },
     ],
     mustache: [
-        { regex: /\}\}/, pop: true, token: 'bracket' },
+        { regex: /\}{2}/, pop: true, token: 'bracket' },
 
         // Mustache keywords
-        { regex: /[>&]|[#^/]\s*(?:(?!\}\}).)*/, token: 'keyword' },
+        { regex: /[>&]|[#^/]\s*(?:(?!\}{2}).)*/, token: 'keyword' },
 
         // Variable
-        { regex: /(?:(?!\}\}).)+/, token: 'variable-2' },
+        { regex: /(?!\}{2})\S(?:\s*(?!\}{2})\S)*/, token: 'variable-2' },
     ],
     comment: [
-        { regex: /\}\}/, pop: true, token: 'comment' },
-        { regex: /(?:(?!\}\}).)*/, token: 'comment' },
+        { regex: '}}', pop: true, token: 'comment' },
+        { regex: /(?:(?!\}{2}).)*/, token: 'comment' },
     ],
 });
 
@@ -34,6 +34,6 @@ CodeMirror.defineMode('mustache', function(config, parserConfig) {
     if (!parserConfig || !parserConfig.base) return mustache;
     return CodeMirror.multiplexingMode(
         CodeMirror.getMode(config, parserConfig.base),
-        { open: '{{', close: /\}\}\}?/, mode: mustache, parseDelimiters: true },
+        { open: '{{', close: /\}{2,3}/, mode: mustache, parseDelimiters: true },
     );
 });
