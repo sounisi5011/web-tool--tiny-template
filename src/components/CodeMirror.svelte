@@ -4,7 +4,7 @@
     Editor as CodeMirrorEditor,
     EditorConfiguration as CodeMirrorConfig,
   } from 'codemirror';
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
 
   type EventMap = {
     focus: { instance: CodeMirrorEditor; event: FocusEvent };
@@ -29,6 +29,21 @@
   export { classes as class };
 
   const dispatch = createEventDispatcher<EventMap>();
+
+  onMount(() => {
+    /*
+     * これをしておかないと、なぜか、ページ読み込み直後のCodeMirrorの表示内容が空になり、何か操作をするまで改善されない。
+     */
+    const init = () =>
+      requestAnimationFrame(() => {
+        if (editor) {
+          editor.setValue(value ?? '');
+          return;
+        }
+        init();
+      });
+    init();
+  });
 
   $: if (editor) {
     editor.on('focus', (instance, event) =>
