@@ -45,9 +45,3 @@
   class={classes}
   options={{ mode, lineNumbers, readOnly: readonly, ...options }}
 />
-
-<style>
-  :global(.CodeMirror) {
-    height: 100%;
-  }
-</style>

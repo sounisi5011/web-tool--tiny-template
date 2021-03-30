@@ -343,7 +343,8 @@
     align-items: center;
   }
 
-  .output-area :global(.editor) {
+  .output-area :global(.editor),
+  .output-area :global(.editor .CodeMirror) {
     width: 100%;
     height: 100%;
   }
