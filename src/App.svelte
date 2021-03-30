@@ -1,6 +1,10 @@
 <script lang="ts">
+  import 'codemirror/mode/xml/xml';
   import Mustache from 'mustache';
 
+  import './codemirror-mode/mustache';
+  import type { EventMap } from './components/CodeMirror.svelte';
+  import CodeMirror from './components/CodeMirror.svelte';
   import VariableInput from './components/VariableInput.svelte';
   import { triggerEnter, downloadFile, pickFile } from './utils/dom';
   import { getVariableNameList } from './utils/mustache';
@@ -179,8 +183,15 @@
       newVariableName = '';
     }
   };
-  const handleSelectAll = (event: { currentTarget: HTMLTextAreaElement }) => {
-    event.currentTarget.select();
+  const handleSelectAll = (
+    event: { currentTarget: HTMLTextAreaElement } | EventMap['focus'],
+  ) => {
+    if ('detail' in event) {
+      const instance = event.detail.instance;
+      instance.execCommand('selectAll');
+    } else {
+      event.currentTarget.select();
+    }
   };
 </script>
 
@@ -229,7 +240,13 @@
       </p>
     </div>
     <div class="input-template-area">
-      <textarea bind:value={templateText} placeholder="テンプレートを入力" />
+      <CodeMirror
+        mode="mustache"
+        bind:value={templateText}
+        placeholder="テンプレートを入力"
+        lineWrapping
+        class="editor"
+      />
     </div>
     <p class="input-template-help">
       テンプレートの言語は
@@ -239,7 +256,14 @@
   </div>
   <div class="output-area">
     {#if typeof outputHTMLText === 'string'}
-      <textarea readonly value={outputHTMLText} on:focus={handleSelectAll} />
+      <CodeMirror
+        mode="text/html"
+        readonly
+        value={outputHTMLText}
+        lineWrapping
+        on:focus={handleSelectAll}
+        class="editor"
+      />
     {:else}
       <strong class="error">テンプレートの変換が失敗しました。</strong>
     {/if}
@@ -305,15 +329,15 @@
 
   .input-template-area {
     flex: 1;
+    overflow-y: auto;
+    border: 1px #ccc;
+    border-style: solid none;
   }
 
-  .input-template-area textarea,
-  .output-area textarea {
-    box-sizing: border-box;
+  .input-template-area :global(.editor),
+  .output-area :global(.editor) {
     width: 100%;
     height: 100%;
-    resize: none;
-    font-family: monospace;
   }
 
   .input-template-help {
@@ -326,6 +350,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    border: none 1px #ccc;
+    border-left-style: solid;
   }
 
   .output-area strong.error {

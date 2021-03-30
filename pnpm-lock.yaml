@@ -1,4 +1,5 @@
 dependencies:
+  codemirror: 5.60.0
   mustache: 4.1.0
   svelte-textarea-autoresize: 1.0.0
 devDependencies:
@@ -6,6 +7,7 @@ devDependencies:
   '@rollup/plugin-node-resolve': 11.2.0_rollup@2.42.4
   '@rollup/plugin-typescript': 8.2.0_c75bafaf95020c8442e2df27791d04f3
   '@tsconfig/svelte': 1.0.10
+  '@types/codemirror': 0.0.108
   '@types/mustache': 4.1.1
   '@typescript-eslint/eslint-plugin': 4.19.0_eslint@7.22.0+typescript@4.2.3
   eslint: 7.22.0
@@ -184,6 +186,12 @@ packages:
     dev: true
     resolution:
       integrity: sha512-EBrpH2iXXfaf/9z81koiDYkp2mlwW2XzFcAqn6qh7VKyP8zBvHHAQzNhY+W9vH5arAjmGAm5g8ElWq6YmXm3ig==
+  /@types/codemirror/0.0.108:
+    dependencies:
+      '@types/tern': 0.23.3
+    dev: true
+    resolution:
+      integrity: sha512-3FGFcus0P7C2UOGCNUVENqObEb4SFk+S8Dnxq7K6aIsLVs/vDtlangl3PEO0ykaKXyK56swVF6Nho7VsA44uhw==
   /@types/estree/0.0.39:
     dev: true
     resolution:
@@ -192,6 +200,10 @@ packages:
     dev: true
     resolution:
       integrity: sha512-laIjwTQaD+5DukBZaygQ79K1Z0jb1bPEMRrkXSLjtCcZm+abyp5YbrqpSLzD42FwWW6gK/aS4NYpJ804nG2brg==
+  /@types/estree/0.0.47:
+    dev: true
+    resolution:
+      integrity: sha512-c5ciR06jK8u9BstrmJyO97m+klJrrhCf9u3rLu3DEAJBirxRqSCvDQoYKmxuYwQI5SZChAWu+tq9oVlGRuzPAg==
   /@types/glob/7.1.3:
     dependencies:
       '@types/minimatch': 3.0.4
@@ -239,6 +251,12 @@ packages:
     dev: true
     resolution:
       integrity: sha512-2XZovu4NwcqmtZtsBR5XYLw18T8cBCnU2USFHTnYLLHz9fkhnoEMoDsqShJIOFsFhn5aJHjweiUUdTrDGujegA==
+  /@types/tern/0.23.3:
+    dependencies:
+      '@types/estree': 0.0.47
+    dev: true
+    resolution:
+      integrity: sha512-imDtS4TAoTcXk0g7u4kkWqedB3E4qpjXzCpD2LU5M5NAXHzCDsypyvXSaG7mM8DKYkCRa7tFp4tS/lp/Wo7Q3w==
   /@typescript-eslint/eslint-plugin/4.19.0_eslint@7.22.0+typescript@4.2.3:
     dependencies:
       '@typescript-eslint/experimental-utils': 4.19.0_eslint@7.22.0+typescript@4.2.3
@@ -637,6 +655,10 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-n8fOixwDD6b/ObinzTrp1ZKFzbgvKZvuz/TvejnLn1aQfC6r52XEx85FmuC+3HI+JM7coBRXUvNqEU2PHVrHpg==
+  /codemirror/5.60.0:
+    dev: false
+    resolution:
+      integrity: sha512-AEL7LhFOlxPlCL8IdTcJDblJm8yrAGib7I+DErJPdZd4l6imx8IMgKK3RblVgBQqz3TZJR4oknQ03bz+uNjBYA==
   /color-convert/1.9.3:
     dependencies:
       color-name: 1.1.3
@@ -3013,8 +3035,10 @@ specifiers:
   '@rollup/plugin-node-resolve': ^11.2.0
   '@rollup/plugin-typescript': ^8.2.0
   '@tsconfig/svelte': ^1.0.10
+  '@types/codemirror': ^0.0.108
   '@types/mustache': ^4.1.1
   '@typescript-eslint/eslint-plugin': ^4.19.0
+  codemirror: ^5.60.0
   eslint: ^7.22.0
   eslint-config-prettier: ^8.1.0
   eslint-config-standard: ^16.0.2
