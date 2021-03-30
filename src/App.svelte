@@ -2,7 +2,8 @@
   import 'codemirror/mode/xml/xml';
   import Mustache from 'mustache';
 
-  import CodeMirror, { EventMap } from './components/CodeMirror.svelte';
+  import type { EventMap } from './components/CodeMirror.svelte';
+  import CodeMirror from './components/CodeMirror.svelte';
   import VariableInput from './components/VariableInput.svelte';
   import { triggerEnter, downloadFile, pickFile } from './utils/dom';
   import { getVariableNameList } from './utils/mustache';

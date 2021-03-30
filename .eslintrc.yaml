@@ -90,6 +90,13 @@ overrides:
       import/no-extraneous-dependencies:
         - error
         - devDependencies: true
+      # Svelte Preprocess cannot figure out whether you have a value or a type,
+      # so tell ESLint to enforce using `import type` instead of `import` for Types.
+      # see https://zenn.dev/mizchi/scraps/a5644f129032aa#comment-46e3b9ec487f5d
+      # see https://github.com/tsconfig/bases/blob/219dc41441205e1652f88e8b45a49c6864cccd2e/bases/svelte.json#L8-L12
+      "@typescript-eslint/consistent-type-imports":
+        - error
+        - prefer: type-imports
 
   - files: "*.d.ts"
     rules:
