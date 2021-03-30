@@ -1,4 +1,6 @@
 <script lang="ts" context="module">
+  import 'codemirror/lib/codemirror.css';
+
   import { fromTextArea } from 'codemirror';
   import type {
     Editor as CodeMirrorEditor,
@@ -7,7 +9,6 @@
   } from 'codemirror';
   import 'codemirror/addon/display/placeholder';
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
-  import 'codemirror/lib/codemirror.css';
 
   type EventMap = {
     focus: { instance: CodeMirrorEditor; event: FocusEvent };
