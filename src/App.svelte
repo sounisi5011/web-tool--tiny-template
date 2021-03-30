@@ -1,4 +1,7 @@
 <script lang="ts">
+  import CodeMirror from '@joshnuss/svelte-codemirror';
+  import type { Editor as CodeMirrorEditor } from 'codemirror';
+  import 'codemirror/mode/xml/xml';
   import Mustache from 'mustache';
 
   import VariableInput from './components/VariableInput.svelte';
@@ -99,6 +102,14 @@
   let outputHTMLText: ReturnType<typeof render>;
   $: outputHTMLText = render(templateText, variablesList);
 
+  let outputHTMLEditor: CodeMirrorEditor;
+  $: if (outputHTMLEditor) {
+    outputHTMLEditor.on('focus', handleSelectAll);
+  }
+  $: if (outputHTMLEditor && typeof outputHTMLText === 'string') {
+    outputHTMLEditor.setValue(outputHTMLText);
+  }
+
   const handleImportVariables = () => {
     pickFile({ accept: '.json' }, (file) => {
       const reader = new FileReader();
@@ -179,9 +190,17 @@
       newVariableName = '';
     }
   };
-  const handleSelectAll = (event: { currentTarget: HTMLTextAreaElement }) => {
-    event.currentTarget.select();
-  };
+  function handleSelectAll(
+    eventOrInstance: { currentTarget: HTMLTextAreaElement } | CodeMirrorEditor,
+  ) {
+    if ('currentTarget' in eventOrInstance) {
+      const event = eventOrInstance;
+      event.currentTarget.select();
+    } else {
+      const instance = eventOrInstance;
+      instance.execCommand('selectAll');
+    }
+  }
 </script>
 
 <main>
@@ -239,7 +258,11 @@
   </div>
   <div class="output-area">
     {#if typeof outputHTMLText === 'string'}
-      <textarea readonly value={outputHTMLText} on:focus={handleSelectAll} />
+      <CodeMirror
+        bind:editor={outputHTMLEditor}
+        options={{ mode: 'text/html', lineNumbers: true, readOnly: true }}
+        class="editor"
+      />
     {:else}
       <strong class="error">テンプレートの変換が失敗しました。</strong>
     {/if}
@@ -307,8 +330,7 @@
     flex: 1;
   }
 
-  .input-template-area textarea,
-  .output-area textarea {
+  .input-template-area textarea {
     box-sizing: border-box;
     width: 100%;
     height: 100%;
@@ -326,6 +348,12 @@
     display: flex;
     justify-content: center;
     align-items: center;
+  }
+
+  .output-area :global(.editor),
+  .output-area :global(.editor .CodeMirror) {
+    width: 100%;
+    height: 100%;
   }
 
   .output-area strong.error {
