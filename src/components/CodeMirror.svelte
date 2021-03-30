@@ -4,6 +4,7 @@
     Editor as CodeMirrorEditor,
     EditorConfiguration as CodeMirrorConfig,
   } from 'codemirror';
+  import 'codemirror/addon/display/placeholder';
   import { createEventDispatcher, onMount } from 'svelte';
 
   type EventMap = {
@@ -20,9 +21,10 @@
 
 <script lang="ts">
   let classes = '';
-  export let mode: string | ({ mode: string } & Record<string, unknown>);
+  export let mode: string | ({ name: string } & Record<string, unknown>);
   export let value: string | null | undefined = '';
   export let readonly: boolean | 'nocursor' = false;
+  export let placeholder = '';
   export let lineNumbers = true;
   export let lineWrapping = false;
   export let editor: CodeMirrorEditor | null = null;
@@ -46,18 +48,33 @@
     init();
   });
 
+  const updateValue = (newValue: string) => {
+    value = newValue;
+  };
+
   $: if (editor) {
     editor.on('focus', (instance, event) =>
       dispatch('focus', { instance, event }),
     );
+    editor.on('change', (instance) => updateValue(instance.getValue()));
   }
   $: if (editor) {
-    editor.setValue(value ?? '');
+    const currentValue = editor.getValue();
+    if (currentValue !== value) {
+      editor.setValue(value ?? '');
+    }
   }
 </script>
 
 <CodeMirror
   bind:editor
   class={classes}
-  options={{ mode, lineNumbers, lineWrapping, readOnly: readonly, ...options }}
+  options={{
+    mode,
+    lineNumbers,
+    lineWrapping,
+    readOnly: readonly,
+    placeholder,
+    ...options,
+  }}
 />

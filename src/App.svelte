@@ -2,6 +2,7 @@
   import 'codemirror/mode/xml/xml';
   import Mustache from 'mustache';
 
+  import './codemirror-mode/mustache';
   import type { EventMap } from './components/CodeMirror.svelte';
   import CodeMirror from './components/CodeMirror.svelte';
   import VariableInput from './components/VariableInput.svelte';
@@ -239,7 +240,13 @@
       </p>
     </div>
     <div class="input-template-area">
-      <textarea bind:value={templateText} placeholder="テンプレートを入力" />
+      <CodeMirror
+        mode={{ name: 'mustache', base: 'text/html' }}
+        bind:value={templateText}
+        placeholder="テンプレートを入力"
+        lineWrapping
+        class="editor"
+      />
     </div>
     <p class="input-template-help">
       テンプレートの言語は
@@ -324,12 +331,12 @@
     flex: 1;
   }
 
-  .input-template-area textarea {
-    box-sizing: border-box;
+  .input-template-area :global(.editor),
+  .input-template-area :global(.editor .CodeMirror),
+  .output-area :global(.editor),
+  .output-area :global(.editor .CodeMirror) {
     width: 100%;
     height: 100%;
-    resize: none;
-    font-family: monospace;
   }
 
   .input-template-help {
@@ -342,12 +349,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-  }
-
-  .output-area :global(.editor),
-  .output-area :global(.editor .CodeMirror) {
-    width: 100%;
-    height: 100%;
   }
 
   .output-area strong.error {
