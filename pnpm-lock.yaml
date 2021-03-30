@@ -1,5 +1,4 @@
 dependencies:
-  '@handlebars/parser': 2.1.0
   codemirror: 5.60.0
   handlebars: 4.7.7
   mustache: 4.1.0
@@ -82,10 +81,6 @@ packages:
       node: ^10.12.0 || >=12.0.0
     resolution:
       integrity: sha512-2ZPCc+uNbjV5ERJr+aKSPRwZgKd2z11x0EgLvb1PURmUrn9QNRXFqje0Ldq454PfAVyaJYyrDvvIKSFP4NnBog==
-  /@handlebars/parser/2.1.0:
-    dev: false
-    resolution:
-      integrity: sha512-R14NuNaSKZ6eE9y4t0fg/1f8iKd5ZJtSOTIseGFzXINTV17XffhLG2Y0CvdKOgyVQ7+UnXi89YGzRo/xsgwHIA==
   /@nodelib/fs.scandir/2.1.4:
     dependencies:
       '@nodelib/fs.stat': 2.0.4
@@ -3065,7 +3060,6 @@ packages:
     resolution:
       integrity: sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==
 specifiers:
-  '@handlebars/parser': ^2.1.0
   '@rollup/plugin-commonjs': ^17.1.0
   '@rollup/plugin-node-resolve': ^11.2.0
   '@rollup/plugin-typescript': ^8.2.0
