@@ -253,6 +253,7 @@
         mode="text/html"
         readonly
         value={outputHTMLText}
+        lineWrapping
         on:focus={handleSelectAll}
         class="editor"
       />

@@ -24,6 +24,7 @@
   export let value: string | null | undefined = '';
   export let readonly: boolean | 'nocursor' = false;
   export let lineNumbers = true;
+  export let lineWrapping = false;
   export let editor: CodeMirrorEditor | null = null;
   export let options: CodeMirrorConfig = {};
   export { classes as class };
@@ -58,5 +59,5 @@
 <CodeMirror
   bind:editor
   class={classes}
-  options={{ mode, lineNumbers, readOnly: readonly, ...options }}
+  options={{ mode, lineNumbers, lineWrapping, readOnly: readonly, ...options }}
 />
