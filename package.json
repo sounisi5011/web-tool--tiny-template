@@ -31,7 +31,6 @@
     "test:tsc": "tsc --noEmit"
   },
   "dependencies": {
-    "@joshnuss/svelte-codemirror": "^0.2.0",
     "codemirror": "^5.60.0",
     "mustache": "^4.1.0",
     "svelte-textarea-autoresize": "^1.0.0"

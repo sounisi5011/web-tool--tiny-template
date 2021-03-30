@@ -1,11 +1,13 @@
 <script lang="ts" context="module">
-  import CodeMirror from '@joshnuss/svelte-codemirror';
+  import { fromTextArea } from 'codemirror';
   import type {
     Editor as CodeMirrorEditor,
+    EditorFromTextArea as CodeMirrorEditorFromTextArea,
     EditorConfiguration as CodeMirrorConfig,
   } from 'codemirror';
   import 'codemirror/addon/display/placeholder';
   import { createEventDispatcher, onMount } from 'svelte';
+  import 'codemirror/lib/codemirror.css';
 
   type EventMap = {
     focus: { instance: CodeMirrorEditor; event: FocusEvent };
@@ -13,7 +15,7 @@
   type CustomEventMap = { [P in keyof EventMap]: CustomEvent<EventMap[P]> };
 
   export type {
-    CodeMirrorEditor,
+    CodeMirrorEditorFromTextArea as CodeMirrorEditor,
     CodeMirrorConfig,
     CustomEventMap as EventMap,
   };
@@ -27,10 +29,11 @@
   export let placeholder = '';
   export let lineNumbers = true;
   export let lineWrapping = false;
-  export let editor: CodeMirrorEditor | null = null;
+  export let editor: CodeMirrorEditorFromTextArea | null = null;
   export let options: CodeMirrorConfig = {};
   export { classes as class };
 
+  let element: HTMLTextAreaElement;
   const dispatch = createEventDispatcher<EventMap>();
 
   onMount(() => {
@@ -52,6 +55,15 @@
     value = newValue;
   };
 
+  $: if (element) {
+    createEditor({
+      mode,
+      lineNumbers,
+      lineWrapping,
+      readOnly: readonly,
+      ...options,
+    });
+  }
   $: if (editor) {
     editor.on('focus', (instance, event) =>
       dispatch('focus', { instance, event }),
@@ -64,17 +76,14 @@
       editor.setValue(value ?? '');
     }
   }
+  $: if (editor) {
+    const classesList = classes.split(/\s+/).filter((token) => token !== '');
+    editor.getWrapperElement().classList.add(...classesList);
+  }
+
+  function createEditor(options: CodeMirrorConfig) {
+    editor = fromTextArea(element, options);
+  }
 </script>
 
-<CodeMirror
-  bind:editor
-  class={classes}
-  options={{
-    mode,
-    lineNumbers,
-    lineWrapping,
-    readOnly: readonly,
-    placeholder,
-    ...options,
-  }}
-/>
+<textarea bind:this={element} placeholder={placeholder} />

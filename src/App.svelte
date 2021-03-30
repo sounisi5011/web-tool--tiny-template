@@ -333,9 +333,7 @@
   }
 
   .input-template-area :global(.editor),
-  .input-template-area :global(.editor .CodeMirror),
-  .output-area :global(.editor),
-  .output-area :global(.editor .CodeMirror) {
+  .output-area :global(.editor) {
     width: 100%;
     height: 100%;
   }
