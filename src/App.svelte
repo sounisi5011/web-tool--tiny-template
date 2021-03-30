@@ -330,6 +330,8 @@
   .input-template-area {
     flex: 1;
     overflow-y: auto;
+    border: 1px #ccc;
+    border-style: solid none;
   }
 
   .input-template-area :global(.editor),
@@ -348,6 +350,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    border: none 1px #ccc;
+    border-left-style: solid;
   }
 
   .output-area strong.error {
