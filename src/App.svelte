@@ -1,9 +1,8 @@
 <script lang="ts">
-  import CodeMirror from '@joshnuss/svelte-codemirror';
-  import type { Editor as CodeMirrorEditor } from 'codemirror';
   import 'codemirror/mode/xml/xml';
   import Mustache from 'mustache';
 
+  import CodeMirror, { EventMap } from './components/CodeMirror.svelte';
   import VariableInput from './components/VariableInput.svelte';
   import { triggerEnter, downloadFile, pickFile } from './utils/dom';
   import { getVariableNameList } from './utils/mustache';
@@ -102,14 +101,6 @@
   let outputHTMLText: ReturnType<typeof render>;
   $: outputHTMLText = render(templateText, variablesList);
 
-  let outputHTMLEditor: CodeMirrorEditor;
-  $: if (outputHTMLEditor) {
-    outputHTMLEditor.on('focus', handleSelectAll);
-  }
-  $: if (outputHTMLEditor && typeof outputHTMLText === 'string') {
-    outputHTMLEditor.setValue(outputHTMLText);
-  }
-
   const handleImportVariables = () => {
     pickFile({ accept: '.json' }, (file) => {
       const reader = new FileReader();
@@ -190,17 +181,16 @@
       newVariableName = '';
     }
   };
-  function handleSelectAll(
-    eventOrInstance: { currentTarget: HTMLTextAreaElement } | CodeMirrorEditor,
-  ) {
-    if ('currentTarget' in eventOrInstance) {
-      const event = eventOrInstance;
-      event.currentTarget.select();
-    } else {
-      const instance = eventOrInstance;
+  const handleSelectAll = (
+    event: { currentTarget: HTMLTextAreaElement } | EventMap['focus'],
+  ) => {
+    if ('detail' in event) {
+      const instance = event.detail.instance;
       instance.execCommand('selectAll');
+    } else {
+      event.currentTarget.select();
     }
-  }
+  };
 </script>
 
 <main>
@@ -259,8 +249,10 @@
   <div class="output-area">
     {#if typeof outputHTMLText === 'string'}
       <CodeMirror
-        bind:editor={outputHTMLEditor}
-        options={{ mode: 'text/html', lineNumbers: true, readOnly: true }}
+        mode="text/html"
+        readonly
+        value={outputHTMLText}
+        on:focus={handleSelectAll}
         class="editor"
       />
     {:else}
@@ -350,8 +342,7 @@
     align-items: center;
   }
 
-  .output-area :global(.editor),
-  .output-area :global(.editor .CodeMirror) {
+  .output-area :global(.editor) {
     width: 100%;
     height: 100%;
   }
