@@ -6,7 +6,7 @@
     EditorConfiguration as CodeMirrorConfig,
   } from 'codemirror';
   import 'codemirror/addon/display/placeholder';
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import 'codemirror/lib/codemirror.css';
 
   type EventMap = {
@@ -49,6 +49,11 @@
         init();
       });
     init();
+  });
+  onDestroy(() => {
+    if (editor) {
+      editor.toTextArea();
+    }
   });
 
   const updateValue = (newValue: string) => {
