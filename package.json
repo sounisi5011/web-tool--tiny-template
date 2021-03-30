@@ -41,6 +41,7 @@
     "@rollup/plugin-node-resolve": "^11.2.0",
     "@rollup/plugin-typescript": "^8.2.0",
     "@tsconfig/svelte": "^1.0.10",
+    "@types/codemirror": "^0.0.108",
     "@types/mustache": "^4.1.1",
     "@typescript-eslint/eslint-plugin": "^4.19.0",
     "eslint": "^7.22.0",
