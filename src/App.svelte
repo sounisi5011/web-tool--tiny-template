@@ -241,7 +241,7 @@
     </div>
     <div class="input-template-area">
       <CodeMirror
-        mode={{ name: 'mustache', base: 'text/html' }}
+        mode="mustache"
         bind:value={templateText}
         placeholder="テンプレートを入力"
         lineWrapping
