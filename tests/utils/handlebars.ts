@@ -1,13 +1,16 @@
 import {
+    ArrayTypeNode,
     getVariableRecord,
     mergeTypeNodeRecord,
     RecordTypeNode,
     StringTypeNode,
+    TypeNode,
     TypeNodeRecord,
 } from '../../src/utils/handlebars';
 
 const stringType: StringTypeNode = { type: 'string' };
 const recordType = (children: TypeNodeRecord): RecordTypeNode => ({ type: 'record', children });
+const arrayType = (children: TypeNode): ArrayTypeNode => ({ type: 'array', children });
 
 describe('mergeTypeNodeRecord()', () => {
     it.each<[readonly TypeNodeRecord[], TypeNodeRecord]>([
@@ -108,5 +111,58 @@ describe('getVariableRecord()', () => {
         ],
     ])('%s', (template, expected) => {
         expect(getVariableRecord(template)).toStrictEqual(expected);
+    });
+
+    describe('built-in helpers', () => {
+        /**
+         * @see https://handlebarsjs.com/guide/builtin-helpers.html#each
+         */
+        describe('#each', () => {
+            it.each<[string, TypeNodeRecord]>([
+                [
+                    '<ul> {{#each people}} <li>{{this}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(stringType),
+                    },
+                ],
+                [
+                    '<ul> {{#each data.people.list}} <li>{{this}}</li> {{/each}} </ul>',
+                    {
+                        data: recordType({
+                            people: recordType({
+                                list: arrayType(stringType),
+                            }),
+                        }),
+                    },
+                ],
+                [
+                    '<ul> {{#each people}} <li>{{name}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            name: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '<dl> {{#each data}} <dt>{{title}}</dt> <dd>{{desc}}</dd> {{/each}} </dl>',
+                    {
+                        data: arrayType(recordType({
+                            title: stringType,
+                            desc: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '{{#each foo this_param_is_invalid}} {{hoge}} {{/each}}',
+                    {
+                        foo: arrayType(recordType({
+                            hoge: stringType,
+                        })),
+                    },
+                ],
+            ])('%s', (template, expected) => {
+                expect(getVariableRecord(template)).toStrictEqual(expected);
+            });
+        });
     });
 });
