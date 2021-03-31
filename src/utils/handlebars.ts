@@ -1,5 +1,7 @@
 import hbs from 'handlebars';
 
+import { objectEntries } from '.';
+
 export interface BaseTypeNode<T extends string> {
     type: T;
 }
@@ -31,9 +33,32 @@ function isMatchType(astNode: { type: string }, type: string): boolean {
     return astNode.type === type;
 }
 
+export function mergeTypeNodeRecord(...sources: TypeNodeRecord[]): TypeNodeRecord {
+    const record: TypeNodeRecord = {};
+    for (const sourceRecord of sources) {
+        objectEntries(sourceRecord)
+            .map(([prop, sourceNode]) => ({ prop, targetNode: record[prop], sourceNode }))
+            .map<[string, TypeNode]>(({ prop, targetNode, sourceNode }) => {
+                if (targetNode) {
+                    if (targetNode.type === 'record' && sourceNode.type === 'record') {
+                        return [
+                            prop,
+                            { ...sourceNode, children: mergeTypeNodeRecord(targetNode.children, sourceNode.children) },
+                        ];
+                    }
+                }
+                return [prop, sourceNode];
+            })
+            .forEach(([prop, node]) => {
+                record[prop] = node;
+            });
+    }
+    return record;
+}
+
 function ast2node(astNode: HandlebarsASTNode): TypeNodeRecord {
     if (isMatchType(astNode, 'Program')) {
-        return Object.assign({}, ...astNode.body.map(ast2node));
+        return mergeTypeNodeRecord(...astNode.body.map(ast2node));
     } else if (isMatchType(astNode, 'MustacheStatement')) {
         const { path } = astNode;
         if (isMatchType(path, 'PathExpression')) {
