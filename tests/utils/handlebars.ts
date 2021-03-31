@@ -1,16 +1,66 @@
 import {
     ArrayTypeNode,
+    genUnionTypeNode,
     getVariableRecord,
     mergeTypeNodeRecord,
     RecordTypeNode,
     StringTypeNode,
     TypeNode,
     TypeNodeRecord,
+    UndefinedTypeNode,
+    UnionTypeNode,
 } from '../../src/utils/handlebars';
 
 const stringType: StringTypeNode = { type: 'string' };
+const undefType: UndefinedTypeNode = { type: 'undefined' };
 const recordType = (children: TypeNodeRecord): RecordTypeNode => ({ type: 'record', children });
 const arrayType = (children: TypeNode): ArrayTypeNode => ({ type: 'array', children });
+const unionType = (children: UnionTypeNode['children']): UnionTypeNode => ({ type: 'union', children });
+
+describe('genUnionTypeNode()', () => {
+    it.each<[readonly TypeNode[], UnionTypeNode]>([
+        [
+            [],
+            unionType({}),
+        ],
+        [
+            [stringType, arrayType(stringType)],
+            unionType({
+                string: stringType,
+                array: arrayType(stringType),
+            }),
+        ],
+        [
+            [stringType, unionType({ undefined: undefType })],
+            unionType({
+                string: stringType,
+                undefined: undefType,
+            }),
+        ],
+        [
+            [stringType, recordType({ x: unionType({ undefined: undefType }) })],
+            unionType({
+                string: stringType,
+                record: recordType({ x: unionType({ undefined: undefType }) }),
+            }),
+        ],
+    ])('%o', (childNodeList, expected) => {
+        expect(genUnionTypeNode(childNodeList)).toStrictEqual(expected);
+    });
+
+    it.each<[readonly TypeNode[], string]>([
+        [
+            [stringType, stringType],
+            'The following types are duplicated: string',
+        ],
+        [
+            [undefType, stringType, undefType, stringType],
+            'The following types are duplicated: undefined, string',
+        ],
+    ])('%o', (childNodeList, expected) => {
+        expect(() => genUnionTypeNode(childNodeList)).toThrow(new Error(expected));
+    });
+});
 
 describe('mergeTypeNodeRecord()', () => {
     it.each<[readonly TypeNodeRecord[], TypeNodeRecord]>([
@@ -43,6 +93,42 @@ describe('mergeTypeNodeRecord()', () => {
                 fuga: recordType({
                     bar: stringType,
                     qux: stringType,
+                }),
+            },
+        ],
+        [
+            [
+                { foo: stringType },
+                { foo: undefType },
+            ],
+            {
+                foo: unionType({
+                    string: stringType,
+                    undefined: undefType,
+                }),
+            },
+        ],
+        [
+            [
+                { foo: recordType({ hoge: stringType }) },
+                { foo: unionType({ string: stringType }) },
+            ],
+            {
+                foo: unionType({
+                    string: stringType,
+                    record: recordType({ hoge: stringType }),
+                }),
+            },
+        ],
+        [
+            [
+                { foo: unionType({ undefined: undefType }) },
+                { foo: unionType({ string: stringType }) },
+            ],
+            {
+                foo: unionType({
+                    string: stringType,
+                    undefined: undefType,
                 }),
             },
         ],
@@ -109,6 +195,19 @@ describe('getVariableRecord()', () => {
                 }),
             },
         ],
+        [
+            '{{ foo.bar.baz }} {{ foo.bar }}',
+            {
+                foo: recordType({
+                    bar: unionType({
+                        record: recordType({
+                            baz: stringType,
+                        }),
+                        string: stringType,
+                    }),
+                }),
+            },
+        ],
     ])('%s', (template, expected) => {
         expect(getVariableRecord(template)).toStrictEqual(expected);
     });
@@ -119,6 +218,12 @@ describe('getVariableRecord()', () => {
          */
         describe('#each', () => {
             it.each<[string, TypeNodeRecord]>([
+                [
+                    '<ul> {{#each people}} nothing {{/each}} </ul>',
+                    {
+                        people: arrayType(undefType),
+                    },
+                ],
                 [
                     '<ul> {{#each people}} <li>{{this}}</li> {{/each}} </ul>',
                     {
@@ -140,6 +245,17 @@ describe('getVariableRecord()', () => {
                     {
                         people: arrayType(recordType({
                             name: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '<ul> {{#each people}} <li>{{name}} <pre>{{this}}</pre></li> {{/each}} </ul>',
+                    {
+                        people: arrayType(unionType({
+                            string: stringType,
+                            record: recordType({
+                                name: stringType,
+                            }),
                         })),
                     },
                 ],

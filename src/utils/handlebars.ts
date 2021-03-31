@@ -1,6 +1,6 @@
 import hbs from 'handlebars';
 
-import { objectEntries } from '.';
+import { objectEntries, objectValues } from '.';
 
 export interface BaseTypeNode<T extends string> {
     type: T;
@@ -10,10 +10,24 @@ export interface BaseTypeParentNode<TType extends string, TChildren> extends Bas
 }
 export interface RecordTypeNode extends BaseTypeParentNode<'record', TypeNodeRecord> {}
 export interface ArrayTypeNode extends BaseTypeParentNode<'array', TypeNode> {}
+export interface UnionTypeNode extends BaseTypeParentNode<'union', TypeNodeRecord> {
+    children: {
+        [P in Exclude<TypeNodeTypes, 'union'>]?: TypeNode extends infer TNode ? FindMatchType<TNode, { type: P }>
+            : never;
+    };
+}
 export interface BooleanTypeNode extends BaseTypeNode<'boolean'> {}
 export interface StringTypeNode extends BaseTypeNode<'string'> {}
-export type TypeNode = RecordTypeNode | ArrayTypeNode | BooleanTypeNode | StringTypeNode;
+export interface UndefinedTypeNode extends BaseTypeNode<'undefined'> {}
+export type TypeNode =
+    | RecordTypeNode
+    | ArrayTypeNode
+    | UnionTypeNode
+    | BooleanTypeNode
+    | StringTypeNode
+    | UndefinedTypeNode;
 export type TypeNodeRecord = Record<string, TypeNode>;
+export type TypeNodeTypes = TypeNode extends { type: infer U } ? U : never;
 
 type FirstParamType<T> = T extends (...args: infer P) => unknown ? P[0] : never;
 type HandlebarsASTNode = Exclude<FirstParamType<hbs.ICompiler[keyof hbs.ICompiler]>, undefined>;
@@ -32,6 +46,29 @@ function isMatchType(astNode: { type: string }, type: string): boolean {
     return astNode.type === type;
 }
 
+export function genUnionTypeNode(childNodeList: readonly TypeNode[]): UnionTypeNode {
+    const duplicatedTypes: Set<string> = new Set();
+    const children = childNodeList.reduce<UnionTypeNode['children']>((children, childNode) => {
+        const childNodeListExcludeUnion: Array<Exclude<TypeNode, UnionTypeNode>> = childNode.type === 'union'
+            ? objectValues(childNode.children)
+            : [childNode];
+        return childNodeListExcludeUnion.reduce((children, childNodeExcludeUnion) => {
+            const { type } = childNodeExcludeUnion;
+            if (type in children) duplicatedTypes.add(type);
+            return { ...children, [type]: childNodeExcludeUnion };
+        }, children);
+    }, {});
+
+    if (duplicatedTypes.size > 0) {
+        throw new Error(`The following types are duplicated: ${[...duplicatedTypes].join(', ')}`);
+    }
+
+    return {
+        type: 'union',
+        children,
+    };
+}
+
 export function mergeTypeNodeRecord(...sources: TypeNodeRecord[]): TypeNodeRecord {
     const record: TypeNodeRecord = {};
     for (const sourceRecord of sources) {
@@ -39,6 +76,15 @@ export function mergeTypeNodeRecord(...sources: TypeNodeRecord[]): TypeNodeRecor
             .map(([prop, sourceNode]) => ({ prop, targetNode: record[prop], sourceNode }))
             .map<[string, TypeNode]>(({ prop, targetNode, sourceNode }) => {
                 if (targetNode) {
+                    if (
+                        targetNode.type !== sourceNode.type || targetNode.type === 'union'
+                        || sourceNode.type === 'union'
+                    ) {
+                        return [
+                            prop,
+                            genUnionTypeNode([targetNode, sourceNode]),
+                        ];
+                    }
                     if (targetNode.type === 'record' && sourceNode.type === 'record') {
                         return [
                             prop,
@@ -130,13 +176,46 @@ function localContextBlockAST2node(astNode: HandlebarsASTBlockStatement): TypeNo
          */
         const [contextVar] = astNode.params;
         if (!contextVar) return null;
-        const localContextRecord = ast2node(astNode.program);
-        const { this: localContextThisVar } = getThisVar(localContextRecord);
+        const { this: localContextThisVar, other: localContextRecord } = getThisVar(ast2node(astNode.program));
+
+        let arrayChildrenNode: TypeNode = { type: 'undefined' };
+        if (localContextRecord) {
+            const recordNode: RecordTypeNode = { type: 'record', children: localContextRecord };
+            if (localContextThisVar) {
+                /*
+                 * {{#each foo}} {{this}} {{hoge}} {{/each}}
+                 * ↓
+                 * { foo: ArrayTypeNode }
+                 * { foo: { children: UnionTypeNode } }
+                 * { foo: { children: { children: { string: StringTypeNode, record: RecordTypeNode } } } }
+                 * { foo: { children: { children: { record: { children: { hoge: StringTypeNode } } } } } }
+                 */
+                arrayChildrenNode = genUnionTypeNode([localContextThisVar, recordNode]);
+            } else {
+                /*
+                 * {{#each foo}} {{hoge}} {{/each}}
+                 * ↓
+                 * { foo: ArrayTypeNode }
+                 * { foo: { children: RecordTypeNode } }
+                 * { foo: { children: { children: { hoge: StringTypeNode } } } }
+                 */
+                arrayChildrenNode = recordNode;
+            }
+        } else if (localContextThisVar) {
+            /*
+             * {{#each foo}} {{this}} {{/each}}
+             * ↓
+             * { foo: ArrayTypeNode }
+             * { foo: { children: localContextThisVar } }
+             */
+            arrayChildrenNode = localContextThisVar;
+        }
+
         return pathExpressionAST2node<ArrayTypeNode>(
             contextVar,
             {
                 type: 'array',
-                children: localContextThisVar ?? { type: 'record', children: localContextRecord },
+                children: arrayChildrenNode,
             },
         );
     }
