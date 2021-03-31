@@ -128,11 +128,16 @@ function ast2node(astNode: HandlebarsASTNode): TypeNodeRecord {
     return {};
 }
 
+/**
+ * @param ignoreAtData
+ * `@key`や`@index`のような{@link https://handlebarsjs.com/api-reference/data-variables.html `@data`変数}を無視する
+ */
 function pathExpressionAST2node<T extends TypeNode>(
     astNode: HandlebarsASTNode,
     valueNode: T,
+    ignoreAtData = true,
 ): Record<string, T | RecordTypeNode> | null {
-    if (!isMatchType(astNode, 'PathExpression')) return null;
+    if (!isMatchType(astNode, 'PathExpression') || (ignoreAtData && astNode.data)) return null;
 
     /*
      * {{ foo }}

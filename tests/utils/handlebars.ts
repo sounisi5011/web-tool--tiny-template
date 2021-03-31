@@ -241,7 +241,21 @@ describe('getVariableRecord()', () => {
                     },
                 ],
                 [
+                    '<ul> {{#each people}} <li data-index="{{@index}}" data-key="{{@key}}">{{this}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(stringType),
+                    },
+                ],
+                [
                     '<ul> {{#each people}} <li>{{name}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            name: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '<ul> {{#each people}} <li data-index="{{@index}}" data-key="{{@key}}">{{name}}</li> {{/each}} </ul>',
                     {
                         people: arrayType(recordType({
                             name: stringType,
