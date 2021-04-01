@@ -69,6 +69,21 @@ export function genUnionTypeNode(childNodeList: readonly TypeNode[]): UnionTypeN
     };
 }
 
+function mergeTypeNode(childNode1: TypeNode, childNode2: TypeNode): RecordTypeNode | UnionTypeNode {
+    if (childNode1.type === 'record' && childNode2.type === 'record') {
+        return mergeRecordTypeNode(childNode1, childNode2);
+    } else {
+        return genUnionTypeNode([childNode1, childNode2]);
+    }
+}
+
+function mergeRecordTypeNode(...childNodeList: RecordTypeNode[]): RecordTypeNode {
+    return {
+        type: 'record',
+        children: mergeTypeNodeRecord(...childNodeList.map(childNode => childNode.children)),
+    };
+}
+
 export function mergeTypeNodeRecord(...sources: TypeNodeRecord[]): TypeNodeRecord {
     const record: TypeNodeRecord = {};
     for (const sourceRecord of sources) {
@@ -76,21 +91,10 @@ export function mergeTypeNodeRecord(...sources: TypeNodeRecord[]): TypeNodeRecor
             .map(([prop, sourceNode]) => ({ prop, targetNode: record[prop], sourceNode }))
             .map<[string, TypeNode]>(({ prop, targetNode, sourceNode }) => {
                 if (targetNode) {
-                    if (
-                        targetNode.type !== sourceNode.type || targetNode.type === 'union'
-                        || sourceNode.type === 'union'
-                    ) {
-                        return [
-                            prop,
-                            genUnionTypeNode([targetNode, sourceNode]),
-                        ];
-                    }
-                    if (targetNode.type === 'record' && sourceNode.type === 'record') {
-                        return [
-                            prop,
-                            { ...sourceNode, children: mergeTypeNodeRecord(targetNode.children, sourceNode.children) },
-                        ];
-                    }
+                    return [
+                        prop,
+                        mergeTypeNode(targetNode, sourceNode),
+                    ];
                 }
                 return [prop, sourceNode];
             })
@@ -161,7 +165,21 @@ function pathExpressionAST2node<T extends TypeNode>(
             },
             null,
         );
-    if (record) return record;
+    if (record) {
+        /*
+         * {{ this.* }}
+         * {{ this/* }}
+         * ↓
+         * { '': RecordTypeNode }
+         * { '': { children: record } }
+         */
+        if (/^this\b/.test(astNode.original) && astNode.parts.join('.').length < astNode.original.length) {
+            return {
+                '': { type: 'record', children: record },
+            };
+        }
+        return record;
+    }
 
     /*
      * {{ this }}
@@ -188,24 +206,68 @@ function localContextBlockAST2node(astNode: HandlebarsASTBlockStatement): TypeNo
         if (localContextRecord) {
             const recordNode: RecordTypeNode = { type: 'record', children: localContextRecord };
             if (localContextThisVar) {
-                /*
-                 * {{#each foo}} {{this}} {{hoge}} {{/each}}
-                 * ↓
-                 * { foo: ArrayTypeNode }
-                 * { foo: { children: UnionTypeNode } }
-                 * { foo: { children: { children: { string: StringTypeNode, record: RecordTypeNode } } } }
-                 * { foo: { children: { children: { record: { children: { hoge: StringTypeNode } } } } } }
-                 */
-                arrayChildrenNode = genUnionTypeNode([localContextThisVar, recordNode]);
+                if (contextName !== undefined) {
+                    const localContextNode = recordNode.children[contextName];
+                    /*
+                     * {{#each foo as |bar|}} {{this.baz}} {{bar.hoge}} {{/each}}
+                     * ↓
+                     * { foo: ArrayTypeNode }
+                     * { foo: { children: RecordTypeNode } }
+                     * { foo: { children: { children: { baz: StringTypeNode, hoge: StringTypeNode } } } }
+                     *
+                     * {{#each foo as |bar|}} {{this.hoge}} {{bar}} {{/each}}
+                     * ↓
+                     * { foo: ArrayTypeNode }
+                     * { foo: { children: UnionTypeNode } }
+                     * { foo: { children: { children: { string: StringTypeNode, record: RecordTypeNode } } } }
+                     * { foo: { children: { children: { record: { children: { hoge: StringTypeNode } } } } } }
+                     *
+                     * {{#each foo as |bar|}} {{this.baz}} {{hoge}} {{/each}}
+                     * ↓
+                     * { foo: ArrayTypeNode }
+                     * { foo: { children: RecordTypeNode } }
+                     * { foo: { children: { children: { baz: StringTypeNode } } } }
+                     */
+                    arrayChildrenNode = localContextNode
+                        ? mergeTypeNode(localContextThisVar, localContextNode)
+                        : localContextThisVar;
+                } else {
+                    /*
+                     * {{#each foo}} {{this.bar}} {{hoge}} {{/each}}
+                     * ↓
+                     * { foo: ArrayTypeNode }
+                     * { foo: { children: RecordTypeNode } }
+                     * { foo: { children: { children: { bar: StringTypeNode, hoge: StringTypeNode } } } }
+                     *
+                     * {{#each foo}} {{this}} {{hoge}} {{/each}}
+                     * ↓
+                     * { foo: ArrayTypeNode }
+                     * { foo: { children: UnionTypeNode } }
+                     * { foo: { children: { children: { string: StringTypeNode, record: RecordTypeNode } } } }
+                     * { foo: { children: { children: { record: { children: { hoge: StringTypeNode } } } } } }
+                     */
+                    arrayChildrenNode = mergeTypeNode(localContextThisVar, recordNode);
+                }
             } else {
-                /*
-                 * {{#each foo}} {{hoge}} {{/each}}
-                 * ↓
-                 * { foo: ArrayTypeNode }
-                 * { foo: { children: RecordTypeNode } }
-                 * { foo: { children: { children: { hoge: StringTypeNode } } } }
-                 */
-                arrayChildrenNode = recordNode;
+                if (contextName !== undefined) {
+                    /*
+                     * {{#each foo as |bar|}} {{bar.hoge}} {{/each}}
+                     * ↓
+                     * { foo: ArrayTypeNode }
+                     * { foo: { children: RecordTypeNode } }
+                     * { foo: { children: { children: { hoge: StringTypeNode } } } }
+                     */
+                    arrayChildrenNode = recordNode.children[contextName];
+                } else {
+                    /*
+                     * {{#each foo}} {{hoge}} {{/each}}
+                     * ↓
+                     * { foo: ArrayTypeNode }
+                     * { foo: { children: RecordTypeNode } }
+                     * { foo: { children: { children: { hoge: StringTypeNode } } } }
+                     */
+                    arrayChildrenNode = recordNode;
+                }
             }
         } else if (localContextThisVar) {
             /*
@@ -215,10 +277,6 @@ function localContextBlockAST2node(astNode: HandlebarsASTBlockStatement): TypeNo
              * { foo: { children: localContextThisVar } }
              */
             arrayChildrenNode = localContextThisVar;
-        }
-
-        if (contextName !== undefined && arrayChildrenNode?.type === 'record') {
-            arrayChildrenNode = arrayChildrenNode.children[contextName];
         }
 
         return pathExpressionAST2node<ArrayTypeNode>(
