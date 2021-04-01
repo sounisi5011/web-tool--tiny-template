@@ -217,7 +217,7 @@ describe('getVariableRecord()', () => {
          * @see https://handlebarsjs.com/guide/builtin-helpers.html#each
          */
         describe('#each', () => {
-            it.each<[string, TypeNodeRecord]>([
+            it.each<[string | string[], TypeNodeRecord]>([
                 [
                     '<ul> {{#each people}} nothing {{/each}} </ul>',
                     {
@@ -507,7 +507,78 @@ describe('getVariableRecord()', () => {
                         })),
                     },
                 ],
-            ])('%s', (template, expected) => {
+                [
+                    [
+                        `{{#each users as |user|}}`,
+                        `  {{#each user.book as |book|}}`,
+                        `    User Id: {{user.id}} Book Id: {{book.id}}`,
+                        `  {{/each}}`,
+                        `{{/each}}`,
+                    ],
+                    {
+                        users: arrayType(recordType({
+                            id: stringType,
+                            book: arrayType(recordType({
+                                id: stringType,
+                            })),
+                        })),
+                    },
+                ],
+                [
+                    [
+                        `{{#each users as |user|}}`,
+                        `  {{#each user.book}}`,
+                        `    User Id: {{user.id}} Book Id: {{this.id}}`,
+                        `  {{/each}}`,
+                        `{{/each}}`,
+                    ],
+                    {
+                        users: arrayType(recordType({
+                            id: stringType,
+                            book: arrayType(recordType({
+                                id: stringType,
+                            })),
+                        })),
+                    },
+                ],
+                [
+                    [
+                        `{{#each users as |user|}}`,
+                        `  {{#each user.book}}`,
+                        `    User Id: {{user.id}} Book Id: {{id}}`,
+                        `  {{/each}}`,
+                        `{{/each}}`,
+                    ],
+                    {
+                        users: arrayType(recordType({
+                            id: stringType,
+                            book: arrayType(recordType({
+                                id: stringType,
+                            })),
+                        })),
+                    },
+                ],
+                [
+                    [
+                        `{{#each users as |user|}}`,
+                        `  {{#each user.book}}`,
+                        `    User Id: {{this.user.id}} Book Id: {{id}}`,
+                        `  {{/each}}`,
+                        `{{/each}}`,
+                    ],
+                    {
+                        users: arrayType(recordType({
+                            book: arrayType(recordType({
+                                user: recordType({
+                                    id: stringType,
+                                }),
+                                id: stringType,
+                            })),
+                        })),
+                    },
+                ],
+            ])('%s', (templateData, expected) => {
+                const template: string = Array.isArray(templateData) ? templateData.join('\n') : templateData;
                 expect(getVariableRecord(template)).toStrictEqual(expected);
             });
         });
