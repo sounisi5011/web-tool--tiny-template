@@ -255,7 +255,82 @@ describe('getVariableRecord()', () => {
                     },
                 ],
                 [
+                    '<ul> {{#each data.people.list}} <li>{{name}}</li> {{/each}} </ul>',
+                    {
+                        data: recordType({
+                            people: recordType({
+                                list: arrayType(recordType({
+                                    name: stringType,
+                                })),
+                            }),
+                        }),
+                    },
+                ],
+                [
                     '<ul> {{#each people}} <li>{{name}} / {{this.desc}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            name: stringType,
+                            desc: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '<ul> {{#each people}} <li>{{name}} / {{this/desc}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            name: stringType,
+                            desc: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '<ul> {{#each people}} <li>{{name}} / {{this.this.desc}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            name: stringType,
+                            desc: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '<ul> {{#each people}} <li>{{name}} / {{this/this/desc}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            name: stringType,
+                            desc: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '<ul> {{#each people}} <li>{{name}} / {{this.this/desc}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            name: stringType,
+                            desc: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '<ul> {{#each people}} <li>{{name}} / {{this/this.desc}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            name: stringType,
+                            desc: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '<ul> {{#each people}} <li>{{name}} / {{this.this/this.desc}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            name: stringType,
+                            desc: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '<ul> {{#each people}} <li>{{name}} / {{this/this.this/desc}}</li> {{/each}} </ul>',
                     {
                         people: arrayType(recordType({
                             name: stringType,
@@ -309,7 +384,37 @@ describe('getVariableRecord()', () => {
                     },
                 ],
                 [
-                    '{{#each users as |user|}} Id: {{userId}} Name: {{user}} {{/each}}',
+                    '{{#each users as |user|}} nothing {{/each}}',
+                    {
+                        users: arrayType(undefType),
+                    },
+                ],
+                [
+                    '{{#each users as |user|}} {{this_var_is_non_exists}} {{/each}}',
+                    {
+                        users: arrayType(undefType),
+                    },
+                ],
+                [
+                    '{{#each users as |user|}} Name: {{user}} {{/each}}',
+                    {
+                        users: arrayType(stringType),
+                    },
+                ],
+                [
+                    '{{#each users as |user|}} Name: {{this}} {{/each}}',
+                    {
+                        users: arrayType(stringType),
+                    },
+                ],
+                [
+                    '{{#each users as |user|}} Name: {{user}} {{this_var_is_non_exists}} {{/each}}',
+                    {
+                        users: arrayType(stringType),
+                    },
+                ],
+                [
+                    '{{#each users as |user|}} Name: {{this}} {{this_var_is_non_exists}} {{/each}}',
                     {
                         users: arrayType(stringType),
                     },
@@ -323,7 +428,23 @@ describe('getVariableRecord()', () => {
                     },
                 ],
                 [
+                    '{{#each users as |user|}} Id: {{user.id}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            id: stringType,
+                        })),
+                    },
+                ],
+                [
                     '{{#each users as |user|}} Id: {{this.id}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            id: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '{{#each users as |user|}} Id: {{user.id}} {{this_var_is_non_exists}} {{/each}}',
                     {
                         users: arrayType(recordType({
                             id: stringType,
@@ -350,7 +471,27 @@ describe('getVariableRecord()', () => {
                     },
                 ],
                 [
+                    '{{#each users as |user|}} Id: {{this.id}} Name: {{user}} {{this_var_is_non_exists}} {{/each}}',
+                    {
+                        users: arrayType(unionType({
+                            string: stringType,
+                            record: recordType({
+                                id: stringType,
+                            }),
+                        })),
+                    },
+                ],
+                [
                     '{{#each users as |user|}} Id: {{this.id}} Name: {{user.name}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            id: stringType,
+                            name: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '{{#each users as |user|}} Id: {{this.id}} Name: {{user.name}} {{this_var_is_non_exists}} {{/each}}',
                     {
                         users: arrayType(recordType({
                             id: stringType,
