@@ -1,15 +1,13 @@
-import {
+import { genUnionTypeNode, getVariableRecord, mergeTypeNodeRecord } from '../../src/utils/handlebars';
+import type {
     ArrayTypeNode,
-    genUnionTypeNode,
-    getVariableRecord,
-    mergeTypeNodeRecord,
     RecordTypeNode,
     StringTypeNode,
     TypeNode,
     TypeNodeRecord,
     UndefinedTypeNode,
     UnionTypeNode,
-} from '../../src/utils/handlebars';
+} from '../../src/utils/handlebars/node';
 
 const stringType: StringTypeNode = { type: 'string' };
 const undefType: UndefinedTypeNode = { type: 'undefined' };

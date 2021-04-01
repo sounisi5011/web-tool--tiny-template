@@ -1,50 +1,16 @@
 import hbs from 'handlebars';
 
 import { objectEntries, objectValues } from '.';
-
-export interface BaseTypeNode<T extends string> {
-    type: T;
-}
-export interface BaseTypeParentNode<TType extends string, TChildren> extends BaseTypeNode<TType> {
-    children: TChildren;
-}
-export interface RecordTypeNode extends BaseTypeParentNode<'record', TypeNodeRecord> {}
-export interface ArrayTypeNode extends BaseTypeParentNode<'array', TypeNode> {}
-export interface UnionTypeNode extends BaseTypeParentNode<'union', TypeNodeRecord> {
-    children: {
-        [P in Exclude<TypeNodeTypes, 'union'>]?: TypeNode extends infer TNode ? FindMatchType<TNode, { type: P }>
-            : never;
-    };
-}
-export interface BooleanTypeNode extends BaseTypeNode<'boolean'> {}
-export interface StringTypeNode extends BaseTypeNode<'string'> {}
-export interface UndefinedTypeNode extends BaseTypeNode<'undefined'> {}
-export type TypeNode =
-    | RecordTypeNode
-    | ArrayTypeNode
-    | UnionTypeNode
-    | BooleanTypeNode
-    | StringTypeNode
-    | UndefinedTypeNode;
-export type TypeNodeRecord = Record<string, TypeNode>;
-export type TypeNodeTypes = TypeNode extends { type: infer U } ? U : never;
-
-type FirstParamType<T> = T extends (...args: infer P) => unknown ? P[0] : never;
-type HandlebarsASTNode = Exclude<FirstParamType<hbs.ICompiler[keyof hbs.ICompiler]>, undefined>;
-type FindMatchType<TTarget, TCond> = TTarget extends TCond ? TTarget : never;
-type HandlebarsASTBlockStatement = FindMatchType<HandlebarsASTNode, { type: 'BlockStatement' }>;
-
-function isMatchType<TNode extends { type: string }>(
-    astNode: TNode,
-    type: 'Program',
-): astNode is FindMatchType<TNode, { body: unknown[] }>;
-function isMatchType<TNode extends { type: string }, TType extends string>(
-    astNode: TNode,
-    type: TType,
-): astNode is FindMatchType<TNode, { type: TType }>;
-function isMatchType(astNode: { type: string }, type: string): boolean {
-    return astNode.type === type;
-}
+import type * as HandlebarsAST from './handlebars/ast';
+import { isMatchType } from './handlebars/ast';
+import type {
+    ArrayTypeNode,
+    RecordTypeNode,
+    StringTypeNode,
+    TypeNode,
+    TypeNodeRecord,
+    UnionTypeNode,
+} from './handlebars/node';
 
 export function genUnionTypeNode(childNodeList: readonly TypeNode[]): UnionTypeNode {
     const duplicatedTypes: Set<string> = new Set();
@@ -105,7 +71,7 @@ export function mergeTypeNodeRecord(...sources: TypeNodeRecord[]): TypeNodeRecor
     return record;
 }
 
-function ast2node(astNode: HandlebarsASTNode): TypeNodeRecord {
+function ast2node(astNode: HandlebarsAST.AllNode): TypeNodeRecord {
     if (isMatchType(astNode, 'Program')) {
         return mergeTypeNodeRecord(...astNode.body.map(ast2node));
     } else if (isMatchType(astNode, 'MustacheStatement')) {
@@ -137,7 +103,7 @@ function ast2node(astNode: HandlebarsASTNode): TypeNodeRecord {
  * `@key`や`@index`のような{@link https://handlebarsjs.com/api-reference/data-variables.html `@data`変数}を無視する
  */
 function pathExpressionAST2node<T extends TypeNode>(
-    astNode: HandlebarsASTNode,
+    astNode: HandlebarsAST.AllNode,
     valueNode: T,
     ignoreAtData = true,
 ): Record<string, T | RecordTypeNode> | null {
@@ -191,7 +157,7 @@ function pathExpressionAST2node<T extends TypeNode>(
     };
 }
 
-function localContextBlockAST2node(astNode: HandlebarsASTBlockStatement): TypeNodeRecord | null {
+function localContextBlockAST2node(astNode: HandlebarsAST.BlockStatement): TypeNodeRecord | null {
     const blockHelperName = astNode.path.original;
     if (blockHelperName === 'each') {
         /**
