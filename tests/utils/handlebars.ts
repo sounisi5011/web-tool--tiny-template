@@ -290,6 +290,37 @@ describe('getVariableRecord()', () => {
                         })),
                     },
                 ],
+                /**
+                 * @see https://handlebarsjs.com/guide/block-helpers.html#block-parameters
+                 */
+                [
+                    '{{#each users as |user userId|}} Id: {{userId}} Name: {{user}} {{/each}}',
+                    {
+                        users: arrayType(stringType),
+                    },
+                ],
+                [
+                    '{{#each users as |user|}} Id: {{userId}} Name: {{user}} {{/each}}',
+                    {
+                        users: arrayType(stringType),
+                    },
+                ],
+                [
+                    '{{#each users as |user userId|}} Id: {{userId}} Name: {{user.name}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            name: stringType,
+                        })),
+                    },
+                ],
+                [
+                    '{{#each users as |user userId this_param_is_invalid|}} Id: {{userId}} Name: {{user.name}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            name: stringType,
+                        })),
+                    },
+                ],
             ])('%s', (template, expected) => {
                 expect(getVariableRecord(template)).toStrictEqual(expected);
             });

@@ -181,9 +181,10 @@ function localContextBlockAST2node(astNode: HandlebarsASTBlockStatement): TypeNo
          */
         const [contextVar] = astNode.params;
         if (!contextVar) return null;
+        const { blockParams: [contextName] = [] } = astNode.program;
         const { this: localContextThisVar, other: localContextRecord } = getThisVar(ast2node(astNode.program));
 
-        let arrayChildrenNode: TypeNode = { type: 'undefined' };
+        let arrayChildrenNode: TypeNode | undefined;
         if (localContextRecord) {
             const recordNode: RecordTypeNode = { type: 'record', children: localContextRecord };
             if (localContextThisVar) {
@@ -216,11 +217,15 @@ function localContextBlockAST2node(astNode: HandlebarsASTBlockStatement): TypeNo
             arrayChildrenNode = localContextThisVar;
         }
 
+        if (contextName !== undefined && arrayChildrenNode?.type === 'record') {
+            arrayChildrenNode = arrayChildrenNode.children[contextName];
+        }
+
         return pathExpressionAST2node<ArrayTypeNode>(
             contextVar,
             {
                 type: 'array',
-                children: arrayChildrenNode,
+                children: arrayChildrenNode ?? { type: 'undefined' },
             },
         );
     }
