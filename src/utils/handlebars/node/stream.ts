@@ -15,8 +15,8 @@ import { objectEntries, objectValues } from '../..';
 
 const arrayIndexSymbol = Symbol('ArrayIndex');
 
-type PathItem = string | typeof arrayIndexSymbol;
-type PathList = readonly PathItem[];
+export type PathItem = string | typeof arrayIndexSymbol;
+export type PathList = readonly PathItem[];
 
 export class NodeStream {
     static arrayIndex: typeof arrayIndexSymbol = arrayIndexSymbol;
