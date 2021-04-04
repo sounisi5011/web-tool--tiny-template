@@ -1,6 +1,7 @@
 import { getVariableRecord } from '../../../src/utils/handlebars';
 import {
     createArrayTypeNode as arrayType,
+    createBooleanTypeNode,
     createRecordTypeNode as recordType,
     createStringTypeNode,
     createUndefinedTypeNode,
@@ -10,6 +11,7 @@ import {
 
 const stringType = createStringTypeNode();
 const undefType = createUndefinedTypeNode();
+const boolType = createBooleanTypeNode();
 
 describe('getVariableRecord()', () => {
     it.each<[string, TypeNodeRecord]>([
@@ -87,6 +89,223 @@ describe('getVariableRecord()', () => {
     });
 
     describe('built-in helpers', () => {
+        /**
+         * @see https://handlebarsjs.com/guide/builtin-helpers.html#if
+         */
+        describe('#if', () => {
+            it.each<[string | string[], TypeNodeRecord]>([
+                [
+                    `{{#if author}} nothing {{/if}}`,
+                    {
+                        author: boolType,
+                    },
+                ],
+                [
+                    `{{#if data.author}} nothing {{/if}}`,
+                    {
+                        data: recordType({
+                            author: boolType,
+                        }),
+                    },
+                ],
+                [
+                    `{{#if author}} {{firstName}} {{lastName}} {{/if}}`,
+                    {
+                        author: boolType,
+                        firstName: stringType,
+                        lastName: stringType,
+                    },
+                ],
+                [
+                    `{{#if author}} {{author}} {{/if}}`,
+                    {
+                        author: unionType([
+                            boolType,
+                            stringType,
+                        ]),
+                    },
+                ],
+                [
+                    `{{#if null}} {{author}} {{/if}}`,
+                    {
+                        author: stringType,
+                    },
+                ],
+                [
+                    `{{#if undefined}} {{author}} {{/if}}`,
+                    {
+                        author: stringType,
+                    },
+                ],
+                [
+                    `{{#if true}} {{author}} {{/if}}`,
+                    {
+                        author: stringType,
+                    },
+                ],
+                [
+                    `{{#if false}} {{author}} {{/if}}`,
+                    {
+                        author: stringType,
+                    },
+                ],
+                [
+                    `{{#if 0}} {{author}} {{/if}}`,
+                    {
+                        author: stringType,
+                    },
+                ],
+                [
+                    `{{#if 42}} {{author}} {{/if}}`,
+                    {
+                        author: stringType,
+                    },
+                ],
+                [
+                    `{{#if ''}} {{author}} {{/if}}`,
+                    {
+                        author: stringType,
+                    },
+                ],
+                [
+                    `{{#if 'str'}} {{author}} {{/if}}`,
+                    {
+                        author: stringType,
+                    },
+                ],
+                [
+                    `{{#if author}} {{name}} {{#if hasBirthday}} {{birthday}} {{/if}} {{/if}}`,
+                    {
+                        author: boolType,
+                        name: stringType,
+                        hasBirthday: boolType,
+                        birthday: stringType,
+                    },
+                ],
+                [
+                    `{{#if author}} nothing {{else}} nothing {{/if}}`,
+                    {
+                        author: boolType,
+                    },
+                ],
+                [
+                    `{{#if author}} nothing {{else}} {{defaultName}} {{/if}}`,
+                    {
+                        author: boolType,
+                        defaultName: stringType,
+                    },
+                ],
+                [
+                    `{{#if author}} {{firstName}} {{lastName}} {{else}} {{defaultName}} {{/if}}`,
+                    {
+                        author: boolType,
+                        firstName: stringType,
+                        lastName: stringType,
+                        defaultName: stringType,
+                    },
+                ],
+                [
+                    `{{#if author}} {{firstName}} {{lastName}} {{else}} {{author}} {{/if}}`,
+                    {
+                        author: unionType([
+                            boolType,
+                            stringType,
+                        ]),
+                        firstName: stringType,
+                        lastName: stringType,
+                    },
+                ],
+                /**
+                 * @see https://handlebarsjs.com/guide/block-helpers.html#conditionals
+                 */
+                [
+                    `{{#if isActive}} nothing {{else if isInactive}} nothing {{/if}}`,
+                    {
+                        isActive: boolType,
+                        isInactive: boolType,
+                    },
+                ],
+                [
+                    `{{#if isActive}} {{foo}} {{else if isInactive}} {{bar}} {{else}} {{baz}} {{/if}}`,
+                    {
+                        isActive: boolType,
+                        foo: stringType,
+                        isInactive: boolType,
+                        bar: stringType,
+                        baz: stringType,
+                    },
+                ],
+            ])('%s', (templateData, expected) => {
+                const template: string = Array.isArray(templateData) ? templateData.join('\n') : templateData;
+                expect(getVariableRecord(template)).toStrictEqual(expected);
+            });
+        });
+        /**
+         * @see https://handlebarsjs.com/guide/builtin-helpers.html#unless
+         */
+        describe('#unless', () => {
+            it.each<[string | string[], TypeNodeRecord]>([
+                [
+                    `{{#unless author}} nothing {{/unless}}`,
+                    {
+                        author: boolType,
+                    },
+                ],
+                [
+                    `{{#unless author}} {{firstName}} {{lastName}} {{/unless}}`,
+                    {
+                        author: boolType,
+                        firstName: stringType,
+                        lastName: stringType,
+                    },
+                ],
+                [
+                    `{{#unless author}} {{author}} {{/unless}}`,
+                    {
+                        author: unionType([
+                            boolType,
+                            stringType,
+                        ]),
+                    },
+                ],
+                [
+                    `{{#unless author}} nothing {{else}} nothing {{/unless}}`,
+                    {
+                        author: boolType,
+                    },
+                ],
+                [
+                    `{{#unless author}} nothing {{else}} {{defaultName}} {{/unless}}`,
+                    {
+                        author: boolType,
+                        defaultName: stringType,
+                    },
+                ],
+                [
+                    `{{#unless author}} {{firstName}} {{lastName}} {{else}} {{defaultName}} {{/unless}}`,
+                    {
+                        author: boolType,
+                        firstName: stringType,
+                        lastName: stringType,
+                        defaultName: stringType,
+                    },
+                ],
+                [
+                    `{{#unless author}} {{firstName}} {{lastName}} {{else}} {{author}} {{/unless}}`,
+                    {
+                        author: unionType([
+                            boolType,
+                            stringType,
+                        ]),
+                        firstName: stringType,
+                        lastName: stringType,
+                    },
+                ],
+            ])('%s', (templateData, expected) => {
+                const template: string = Array.isArray(templateData) ? templateData.join('\n') : templateData;
+                expect(getVariableRecord(template)).toStrictEqual(expected);
+            });
+        });
         /**
          * @see https://handlebarsjs.com/guide/builtin-helpers.html#each
          */

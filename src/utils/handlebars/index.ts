@@ -78,11 +78,71 @@ function assignAST2node(
         if (pathList) nodeStream.add(pathList, 'string');
     } else if (isMatchType(astNode, 'BlockStatement')) {
         const blockHelperName = astNode.path.original;
-        if (blockHelperName === 'each') {
+        if (blockHelperName === 'if' || blockHelperName === 'unless') {
+            assignIfBlockAST2node(astNode, nodeStream, currentContext);
+        } else if (blockHelperName === 'each') {
             assignEachBlockAST2node(astNode, nodeStream, currentContext);
         }
     }
     return nodeStream.node;
+}
+
+/**
+ * Handlebarsの{@link https://handlebarsjs.com/guide/builtin-helpers.html#if ビルトイン・ブロック・ヘルパー`#if`}および{@link https://handlebarsjs.com/guide/builtin-helpers.html#unless `#unless`}を示す`BlockStatement`ASTノードの解析結果を`NodeStream`に代入する
+ */
+function assignIfBlockAST2node(
+    astNode: HandlebarsAST.BlockStatement,
+    nodeStream: NodeStream,
+    currentContext: ContextPaths,
+): void {
+    /**
+     * 以下のテンプレートが指定された場合の、`foo`に相当する`PathExpression`ASTノード、または、`Literal`ASTノード
+     * ```handlebars
+     * {{#if foo}} ... {{/if}}
+     * ```
+     * ```handlebars
+     * {{#unless foo}} ... {{/if}}
+     * ```
+     */
+    const conditionalParam = astNode.params[0];
+    if (!conditionalParam) {
+        /**
+         * 第一引数が未定義の場合は、`#if`および`#unless`はエラーを投げて失敗する。
+         * このため、第一引数が未定義の場合は、何もせずに終了する
+         */
+        return;
+    }
+
+    /**
+     * 以下のテンプレートが指定された場合の、`foo`に相当する`PathList`型の値
+     * ```handlebars
+     * {{#if foo}} ... {{/if}}
+     * ```
+     * ```handlebars
+     * {{#unless foo}} ... {{/if}}
+     * ```
+     * 値が`null`の場合は、該当の箇所に`Literal`ASTノードが指定されていたため`PathList`型への変換に失敗している
+     */
+    const conditionalPathList = pathExpressionAST2pathList(conditionalParam, currentContext);
+
+    /**
+     * 第一引数に指定されていた式が変数名だった場合は、boolean型の値として`NodeStream`に代入する
+     */
+    if (conditionalPathList) {
+        nodeStream.add(conditionalPathList, 'boolean');
+    }
+
+    /**
+     * `if`ブロックの内容を解析する
+     */
+    assignAST2node(astNode.program, nodeStream, currentContext);
+
+    /**
+     * `else`ブロックの内容を解析する
+     */
+    if (astNode.inverse) {
+        assignAST2node(astNode.inverse, nodeStream, currentContext);
+    }
 }
 
 /**
