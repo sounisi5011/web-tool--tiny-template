@@ -1,4 +1,4 @@
-import { getVariableRecord } from '../../src/utils/handlebars';
+import { getVariableRecord } from '../../../src/utils/handlebars';
 import {
     createArrayTypeNode as arrayType,
     createRecordTypeNode as recordType,
@@ -6,7 +6,7 @@ import {
     createUndefinedTypeNode,
     createUnionTypeNode as unionType,
     TypeNodeRecord,
-} from '../../src/utils/handlebars/node';
+} from '../../../src/utils/handlebars/node';
 
 const stringType = createStringTypeNode();
 const undefType = createUndefinedTypeNode();
