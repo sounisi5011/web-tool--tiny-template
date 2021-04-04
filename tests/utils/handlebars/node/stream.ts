@@ -1,21 +1,16 @@
-import type {
-    ArrayTypeNode,
-    BooleanTypeNode,
-    RecordTypeNode,
-    StringTypeNode,
-    TypeNode,
-    TypeNodeRecord,
-    UndefinedTypeNode,
-    UnionTypeNode,
+import {
+    createArrayTypeNode as arrayType,
+    createBooleanTypeNode,
+    createRecordTypeNode as recordType,
+    createStringTypeNode,
+    createUndefinedTypeNode,
+    createUnionTypeNode as unionType,
 } from '../../../../src/utils/handlebars/node';
 import { NodeStream } from '../../../../src/utils/handlebars/node/stream';
 
-const undefType: UndefinedTypeNode = { type: 'undefined' };
-const stringType: StringTypeNode = { type: 'string' };
-const boolType: BooleanTypeNode = { type: 'boolean' };
-const recordType = (children: TypeNodeRecord): RecordTypeNode => ({ type: 'record', children });
-const arrayType = (children: TypeNode): ArrayTypeNode => ({ type: 'array', children });
-const unionType = (children: UnionTypeNode['children']): UnionTypeNode => ({ type: 'union', children });
+const undefType = createUndefinedTypeNode();
+const stringType = createStringTypeNode();
+const boolType = createBooleanTypeNode();
 
 describe('class NodeStream', () => {
     it('default', () => {
@@ -48,10 +43,10 @@ describe('class NodeStream', () => {
             const stream = new NodeStream();
             stream.add([], 'boolean');
             stream.add([], 'string');
-            expect(stream.node).toStrictEqual(unionType({
-                boolean: boolType,
-                string: stringType,
-            }));
+            expect(stream.node).toStrictEqual(unionType([
+                boolType,
+                stringType,
+            ]));
         });
     });
 
@@ -68,10 +63,10 @@ describe('class NodeStream', () => {
             stream.add(['foo'], 'boolean');
             stream.add(['foo'], 'string');
             expect(stream.node).toStrictEqual(recordType({
-                foo: unionType({
-                    boolean: boolType,
-                    string: stringType,
-                }),
+                foo: unionType([
+                    boolType,
+                    stringType,
+                ]),
             }));
         });
     });
@@ -92,10 +87,10 @@ describe('class NodeStream', () => {
             stream.add(['foo', 'bar'], 'string');
             expect(stream.node).toStrictEqual(recordType({
                 foo: recordType({
-                    bar: unionType({
-                        boolean: boolType,
-                        string: stringType,
-                    }),
+                    bar: unionType([
+                        boolType,
+                        stringType,
+                    ]),
                 }),
             }));
         });
@@ -115,10 +110,10 @@ describe('class NodeStream', () => {
             stream.add(['foo', NodeStream.arrayIndex], 'string');
             expect(stream.node).toStrictEqual(recordType({
                 foo: arrayType(
-                    unionType({
-                        boolean: boolType,
-                        string: stringType,
-                    }),
+                    unionType([
+                        boolType,
+                        stringType,
+                    ]),
                 ),
             }));
         });
@@ -143,10 +138,10 @@ describe('class NodeStream', () => {
             expect(stream.node).toStrictEqual(recordType({
                 foo: arrayType(
                     recordType({
-                        hoge: unionType({
-                            boolean: boolType,
-                            string: stringType,
-                        }),
+                        hoge: unionType([
+                            boolType,
+                            stringType,
+                        ]),
                     }),
                 ),
             }));
@@ -170,12 +165,12 @@ describe('class NodeStream', () => {
             stream.add(['foo'], 'boolean');
             stream.add(['foo', 'bar'], 'boolean');
             expect(stream.node).toStrictEqual(recordType({
-                foo: unionType({
-                    boolean: boolType,
-                    record: recordType({
+                foo: unionType([
+                    boolType,
+                    recordType({
                         bar: boolType,
                     }),
-                }),
+                ]),
             }));
         });
         it('foo/bar and foo', () => {
@@ -183,12 +178,12 @@ describe('class NodeStream', () => {
             stream.add(['foo', 'bar'], 'boolean');
             stream.add(['foo'], 'boolean');
             expect(stream.node).toStrictEqual(recordType({
-                foo: unionType({
-                    boolean: boolType,
-                    record: recordType({
+                foo: unionType([
+                    boolType,
+                    recordType({
                         bar: boolType,
                     }),
-                }),
+                ]),
             }));
         });
         it('foo/hoge and foo and foo/fuga', () => {
@@ -197,13 +192,13 @@ describe('class NodeStream', () => {
             stream.add(['foo'], 'boolean');
             stream.add(['foo', 'fuga'], 'string');
             expect(stream.node).toStrictEqual(recordType({
-                foo: unionType({
-                    boolean: boolType,
-                    record: recordType({
+                foo: unionType([
+                    boolType,
+                    recordType({
                         hoge: boolType,
                         fuga: stringType,
                     }),
-                }),
+                ]),
             }));
         });
         it('foo/[index]/hoge and foo/[index]/fuga', () => {
@@ -225,12 +220,12 @@ describe('class NodeStream', () => {
             stream.add(['foo', NodeStream.arrayIndex], 'string');
             expect(stream.node).toStrictEqual(recordType({
                 foo: arrayType(
-                    unionType({
-                        record: recordType({
+                    unionType([
+                        recordType({
                             hoge: boolType,
                         }),
-                        string: stringType,
-                    }),
+                        stringType,
+                    ]),
                 ),
             }));
         });
@@ -240,12 +235,12 @@ describe('class NodeStream', () => {
             stream.add(['foo', NodeStream.arrayIndex, 'hoge'], 'boolean');
             expect(stream.node).toStrictEqual(recordType({
                 foo: arrayType(
-                    unionType({
-                        record: recordType({
+                    unionType([
+                        recordType({
                             hoge: boolType,
                         }),
-                        string: stringType,
-                    }),
+                        stringType,
+                    ]),
                 ),
             }));
         });
@@ -254,16 +249,16 @@ describe('class NodeStream', () => {
             stream.add(['foo', NodeStream.arrayIndex, 'hoge'], 'boolean');
             stream.add(['foo', 'bar'], 'boolean');
             expect(stream.node).toStrictEqual(recordType({
-                foo: unionType({
-                    array: arrayType(
+                foo: unionType([
+                    arrayType(
                         recordType({
                             hoge: boolType,
                         }),
                     ),
-                    record: recordType({
+                    recordType({
                         bar: boolType,
                     }),
-                }),
+                ]),
             }));
         });
         it('foo/bar and foo/[index]/hoge', () => {
@@ -271,16 +266,16 @@ describe('class NodeStream', () => {
             stream.add(['foo', 'bar'], 'boolean');
             stream.add(['foo', NodeStream.arrayIndex, 'hoge'], 'boolean');
             expect(stream.node).toStrictEqual(recordType({
-                foo: unionType({
-                    array: arrayType(
+                foo: unionType([
+                    arrayType(
                         recordType({
                             hoge: boolType,
                         }),
                     ),
-                    record: recordType({
+                    recordType({
                         bar: boolType,
                     }),
-                }),
+                ]),
             }));
         });
     });
@@ -317,10 +312,10 @@ describe('class NodeStream', () => {
             stream.add([], 'string');
             stream.add([], 'boolean');
             stream.add([], 'string');
-            expect(stream.node).toStrictEqual(unionType({
-                boolean: boolType,
-                string: stringType,
-            }));
+            expect(stream.node).toStrictEqual(unionType([
+                boolType,
+                stringType,
+            ]));
         });
         it('type:union(boolean, string, array)', () => {
             const stream = new NodeStream();
@@ -333,11 +328,11 @@ describe('class NodeStream', () => {
             stream.add([], 'string');
             stream.add([], 'array');
             stream.add([], 'boolean');
-            expect(stream.node).toStrictEqual(unionType({
-                boolean: boolType,
-                string: stringType,
-                array: arrayType(undefType),
-            }));
+            expect(stream.node).toStrictEqual(unionType([
+                boolType,
+                stringType,
+                arrayType(undefType),
+            ]));
         });
     });
 
@@ -357,10 +352,10 @@ describe('class NodeStream', () => {
         it('type:array (in union)', () => {
             const stream = new NodeStream();
             const expected = recordType({
-                foo: unionType({
-                    array: arrayType(boolType),
-                    boolean: boolType,
-                }),
+                foo: unionType([
+                    arrayType(boolType),
+                    boolType,
+                ]),
             });
 
             stream.add(['foo', NodeStream.arrayIndex], 'boolean');
@@ -387,12 +382,12 @@ describe('class NodeStream', () => {
         it('type:record (in union)', () => {
             const stream = new NodeStream();
             const expected = recordType({
-                foo: unionType({
-                    record: recordType({
+                foo: unionType([
+                    recordType({
                         bar: boolType,
                     }),
-                    string: stringType,
-                }),
+                    stringType,
+                ]),
             });
 
             stream.add(['foo', 'bar'], 'boolean');

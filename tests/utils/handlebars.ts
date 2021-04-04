@@ -1,19 +1,15 @@
 import { getVariableRecord } from '../../src/utils/handlebars';
-import type {
-    ArrayTypeNode,
-    RecordTypeNode,
-    StringTypeNode,
-    TypeNode,
+import {
+    createArrayTypeNode as arrayType,
+    createRecordTypeNode as recordType,
+    createStringTypeNode,
+    createUndefinedTypeNode,
+    createUnionTypeNode as unionType,
     TypeNodeRecord,
-    UndefinedTypeNode,
-    UnionTypeNode,
 } from '../../src/utils/handlebars/node';
 
-const stringType: StringTypeNode = { type: 'string' };
-const undefType: UndefinedTypeNode = { type: 'undefined' };
-const recordType = (children: TypeNodeRecord): RecordTypeNode => ({ type: 'record', children });
-const arrayType = (children: TypeNode): ArrayTypeNode => ({ type: 'array', children });
-const unionType = (children: UnionTypeNode['children']): UnionTypeNode => ({ type: 'union', children });
+const stringType = createStringTypeNode();
+const undefType = createUndefinedTypeNode();
 
 describe('getVariableRecord()', () => {
     it.each<[string, TypeNodeRecord]>([
@@ -77,12 +73,12 @@ describe('getVariableRecord()', () => {
             '{{ foo.bar.baz }} {{ foo.bar }}',
             {
                 foo: recordType({
-                    bar: unionType({
-                        record: recordType({
+                    bar: unionType([
+                        recordType({
                             baz: stringType,
                         }),
-                        string: stringType,
-                    }),
+                        stringType,
+                    ]),
                 }),
             },
         ],
@@ -227,12 +223,12 @@ describe('getVariableRecord()', () => {
                 [
                     '<ul> {{#each people}} <li>{{name}} <pre>{{this}}</pre></li> {{/each}} </ul>',
                     {
-                        people: arrayType(unionType({
-                            string: stringType,
-                            record: recordType({
+                        people: arrayType(unionType([
+                            stringType,
+                            recordType({
                                 name: stringType,
                             }),
-                        })),
+                        ])),
                     },
                 ],
                 [
@@ -340,23 +336,23 @@ describe('getVariableRecord()', () => {
                 [
                     '{{#each users as |user|}} Id: {{this.id}} Name: {{user}} {{/each}}',
                     {
-                        users: arrayType(unionType({
-                            string: stringType,
-                            record: recordType({
+                        users: arrayType(unionType([
+                            stringType,
+                            recordType({
                                 id: stringType,
                             }),
-                        })),
+                        ])),
                     },
                 ],
                 [
                     '{{#each users as |user|}} Id: {{this.id}} Name: {{user}} {{this_var_is_non_exists}} {{/each}}',
                     {
-                        users: arrayType(unionType({
-                            string: stringType,
-                            record: recordType({
+                        users: arrayType(unionType([
+                            stringType,
+                            recordType({
                                 id: stringType,
                             }),
-                        })),
+                        ])),
                     },
                 ],
                 [
