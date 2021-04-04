@@ -321,6 +321,13 @@ function assignEachBlockAST2node(
         }
         assignAST2node(astNode.program, nodeStream, childContext);
     }
+
+    /**
+     * `else`ブロックの内容を解析する
+     */
+    if (astNode.inverse) {
+        assignAST2node(astNode.inverse, nodeStream, currentContext);
+    }
 }
 
 /**

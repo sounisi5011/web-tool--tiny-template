@@ -348,6 +348,15 @@ describe('getVariableRecord()', () => {
                     },
                 ],
                 [
+                    '<ul> {{#each people}} <li>{{name}}</li> {{else}} <li>{{defaultName}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            name: stringType,
+                        })),
+                        defaultName: stringType,
+                    },
+                ],
+                [
                     '<ul> {{#each data.people.list}} <li>{{name}}</li> {{/each}} </ul>',
                     {
                         data: recordType({
@@ -467,6 +476,17 @@ describe('getVariableRecord()', () => {
                         })),
                     },
                 ],
+                [
+                    '{{#each foo}} {{#each bar}} {{hoge}} {{else}} {{default}} {{/each}} {{/each}}',
+                    {
+                        foo: arrayType(recordType({
+                            bar: arrayType(recordType({
+                                hoge: stringType,
+                            })),
+                            default: stringType,
+                        })),
+                    },
+                ],
                 /**
                  * @see https://handlebarsjs.com/guide/block-helpers.html#block-parameters
                  */
@@ -492,6 +512,13 @@ describe('getVariableRecord()', () => {
                     '{{#each users as |user|}} Name: {{user}} {{/each}}',
                     {
                         users: arrayType(stringType),
+                    },
+                ],
+                [
+                    '{{#each users as |user|}} Name: {{user}} {{else}} {{default}} {{/each}}',
+                    {
+                        users: arrayType(stringType),
+                        default: stringType,
                     },
                 ],
                 [
@@ -614,6 +641,66 @@ describe('getVariableRecord()', () => {
                             book: arrayType(recordType({
                                 id: stringType,
                             })),
+                        })),
+                    },
+                ],
+                [
+                    [
+                        `{{#each users as |user|}}`,
+                        `  {{#each user.book as |book|}}`,
+                        `    User Id: {{user.id}} Book Id: {{book.id}}`,
+                        `  {{else}}`,
+                        `    {{errorMsg}}`,
+                        `  {{/each}}`,
+                        `{{/each}}`,
+                    ],
+                    {
+                        users: arrayType(recordType({
+                            id: stringType,
+                            book: arrayType(recordType({
+                                id: stringType,
+                            })),
+                            errorMsg: stringType,
+                        })),
+                    },
+                ],
+                [
+                    [
+                        `{{#each users as |user|}}`,
+                        `  {{#each user.book as |book|}}`,
+                        `    User Id: {{user.id}} Book Id: {{book.id}}`,
+                        `  {{else}}`,
+                        `    {{user.errorMsg}}`,
+                        `  {{/each}}`,
+                        `{{/each}}`,
+                    ],
+                    {
+                        users: arrayType(recordType({
+                            id: stringType,
+                            book: arrayType(recordType({
+                                id: stringType,
+                            })),
+                            errorMsg: stringType,
+                        })),
+                    },
+                ],
+                [
+                    [
+                        `{{#each users as |user|}}`,
+                        `  {{#each user.book as |book|}}`,
+                        `    User Id: {{user.id}} Book Id: {{book.id}}`,
+                        `  {{else}}`,
+                        `    {{this.errorMsg}}`,
+                        `  {{/each}}`,
+                        `{{/each}}`,
+                    ],
+                    {
+                        users: arrayType(recordType({
+                            id: stringType,
+                            book: arrayType(recordType({
+                                id: stringType,
+                            })),
+                            errorMsg: stringType,
                         })),
                     },
                 ],
