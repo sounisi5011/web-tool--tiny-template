@@ -8,7 +8,7 @@ export interface RecordTypeNode extends BaseTypeParentNode<'record', TypeNodeRec
 export interface ArrayTypeNode extends BaseTypeParentNode<'array', TypeNode> {}
 export interface UnionTypeNode extends BaseTypeParentNode<'union', TypeNodeRecord> {
     children: {
-        [P in Exclude<TypeNodeTypes, 'union'>]?: TypeNode extends infer TNode ? Extract<TNode, { type: P }> : never;
+        [P in Exclude<TypeNodeTypes, 'union'>]?: Extract<TypeNode, { type: P }>;
     };
 }
 export interface BooleanTypeNode extends BaseTypeNode<'boolean'> {}
@@ -22,4 +22,4 @@ export type TypeNode =
     | StringTypeNode
     | UndefinedTypeNode;
 export type TypeNodeRecord = Record<string, TypeNode>;
-export type TypeNodeTypes = TypeNode extends { type: infer U } ? U : never;
+export type TypeNodeTypes = TypeNode['type'];
