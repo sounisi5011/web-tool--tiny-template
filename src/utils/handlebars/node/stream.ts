@@ -1,7 +1,3 @@
-// - ノードを動的に追加するメソッド
-// - ある値の変数名（コンテキスト）を追加するメソッド
-// - 変数名から値を引っ張るメソッド（追加時に指定可能にする？）
-
 import {
     createEmptyTypeNode,
     createUndefinedTypeNode,
