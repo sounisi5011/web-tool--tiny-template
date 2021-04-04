@@ -69,7 +69,7 @@ export class NodeStream {
     private getNodeByType<T extends TypeNodeTypes>(node: TypeNode, type: T): Extract<TypeNode, { type: T }> | undefined;
     private getNodeByType(node: TypeNode, type: TypeNodeTypes): TypeNode | undefined {
         if (node.type === type) return node;
-        if (node.type === 'union' && type !== 'union') return node.children[type];
+        if (node.type === 'union' && type !== 'union' && type !== 'undefined') return node.children[type];
         return undefined;
     }
 
@@ -123,9 +123,7 @@ export class NodeStream {
         const mergedChildren: UnionTypeNode['children'] = {};
 
         for (const node of [node1, node2]) {
-            const childNodeList: Array<Exclude<TypeNode, UnionTypeNode>> = node.type === 'union'
-                ? objectValues(node.children)
-                : [node];
+            const childNodeList = node.type === 'union' ? objectValues(node.children) : [node];
             for (const childNode of childNodeList) {
                 switch (childNode.type) {
                     case 'array':
@@ -135,9 +133,6 @@ export class NodeStream {
                         mergedChildren[childNode.type] = this.mergeNode(mergedChildren[childNode.type], childNode);
                         break;
                     case 'string':
-                        mergedChildren[childNode.type] = this.mergeNode(mergedChildren[childNode.type], childNode);
-                        break;
-                    case 'boolean':
                         mergedChildren[childNode.type] = this.mergeNode(mergedChildren[childNode.type], childNode);
                         break;
                     default:
