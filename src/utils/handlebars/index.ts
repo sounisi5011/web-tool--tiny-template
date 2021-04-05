@@ -156,13 +156,14 @@ function assignEachBlockAST2node(
     nodeStream: NodeStream,
     currentContext: ContextPaths,
 ): void {
+    if (!isSingleTuple(astNode.params)) return;
     /**
      * 以下のテンプレートが指定された場合の、`foo`に相当する`PathList`型の値
      * ```handlebars
      * {{#each foo}} ... {{/each}}
      * ```
      */
-    const parentContextPathList = astNode.params[0] && pathExpressionAST2pathList(astNode.params[0], currentContext);
+    const parentContextPathList = pathExpressionAST2pathList(astNode.params[0], currentContext);
     if (!parentContextPathList) return;
     const contextPathList = parentContextPathList.concat(NodeStream.arrayIndex);
     /**

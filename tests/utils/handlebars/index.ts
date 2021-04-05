@@ -872,14 +872,20 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each foo this_param_is_invalid}} {{hoge}} {{/each}}',
-                    {
-                        foo: arrayType(recordType({
-                            hoge: stringType,
-                        })),
-                    },
+                    {},
                     [
                         [
-                            { foo: { hoge: 42 } },
+                            {},
+                            new Error('Must pass iterator to #each'),
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each}} {{hoge}} {{/each}}',
+                    {},
+                    [
+                        [
+                            {},
                             new Error('Must pass iterator to #each'),
                         ],
                     ],
