@@ -6,15 +6,15 @@ import type { TypeNode, TypeNodeRecord } from './node';
 import { NodeStream, PathList } from './node/stream';
 
 interface ContextPaths {
-    default: PathList;
-    aliasName?: string;
-    parentAliasNameRecord?: Record<string, PathList>;
+    readonly default: PathList;
+    readonly aliasNameRecord: Readonly<Record<string, PathList>>;
+    readonly ignoreNameSet?: ReadonlySet<string>;
 }
 
 export function getVariableRecord(template: string): TypeNodeRecord {
     const nodeStream = new NodeStream();
     const ast = hbs.parse(template);
-    const node = assignAST2node(ast, nodeStream, { default: [] });
+    const node = assignAST2node(ast, nodeStream, { default: [], aliasNameRecord: {} });
 
     if (node.type === 'record') {
         return node.children;
@@ -169,9 +169,23 @@ function assignEachBlockAST2node(
      * ```
      */
     const contextName = astNode.program.blockParams?.[0];
+    /**
+     * 以下のテンプレートが指定された場合の、`fuga`に相当する`string`型の値
+     * ```handlebars
+     * {{#each foo as |hoge fuga|}} ... {{/each}}
+     * ```
+     */
+    const fieldName = astNode.program.blockParams?.[1];
 
     nodeStream.add(parentContextPathList, 'array');
 
+    const childContext: ContextPaths = {
+        ...currentContext,
+        default: contextPathList,
+        ...typeof fieldName === 'string'
+            ? { ignoreNameSet: new Set(currentContext.ignoreNameSet).add(fieldName) }
+            : {},
+    };
     if (typeof contextName === 'string') {
         /**
          * {{#each foo as |bar|}} {{bar.hoge}} {{/each}}
@@ -232,7 +246,24 @@ function assignEachBlockAST2node(
          *     foo: ArrayTypeNode {
          *       children: RecordTypeNode {
          *         children: {
-         *           baz: StringTypeNode
+         *           baz: StringTypeNode,
+         *           hoge: StringTypeNode
+         *         }
+         *       }
+         *     }
+         *   }
+         * }
+         *
+         *
+         * {{#each foo as |bar barID|}} {{bar.hoge}} {{barID}} {{fuga}} {{/each}}
+         * ↓
+         * RecordTypeNode {
+         *   children: {
+         *     foo: ArrayTypeNode {
+         *       children: RecordTypeNode {
+         *         children: {
+         *           hoge: StringTypeNode
+         *           fuga: StringTypeNode
          *         }
          *       }
          *     }
@@ -240,11 +271,11 @@ function assignEachBlockAST2node(
          * }
          */
         assignAST2node(astNode.program, nodeStream, {
-            default: contextPathList,
-            aliasName: contextName,
-            parentAliasNameRecord: typeof currentContext.aliasName === 'string'
-                ? { ...currentContext.parentAliasNameRecord, [currentContext.aliasName]: currentContext.default }
-                : { ...currentContext.parentAliasNameRecord },
+            ...childContext,
+            aliasNameRecord: {
+                ...currentContext.aliasNameRecord,
+                [contextName]: contextPathList,
+            },
         });
     } else {
         /**
@@ -309,16 +340,6 @@ function assignEachBlockAST2node(
          *   }
          * }
          */
-        const childContext: ContextPaths = { default: contextPathList };
-        if (currentContext.parentAliasNameRecord) {
-            childContext.parentAliasNameRecord = { ...currentContext.parentAliasNameRecord };
-        }
-        if (typeof currentContext.aliasName === 'string') {
-            childContext.parentAliasNameRecord = {
-                ...childContext.parentAliasNameRecord,
-                [currentContext.aliasName]: currentContext.default,
-            };
-        }
         assignAST2node(astNode.program, nodeStream, childContext);
     }
 
@@ -339,24 +360,11 @@ function assignEachBlockAST2node(
  * 以下のいずれかの場合は`null`。それ以外の場合は`PathList`型の配列値
  * + 第一引数`astNode`の値が`PathExpression`ASTノードではない
  * + 第三引数`ignoreAtData`の値が`true`で、かつ、対象の変数が{@link https://handlebarsjs.com/api-reference/data-variables.html `@data`変数}である
- * + 変数のコンテキストに名前がつけられており、かつ、変数名の最初の識別子がどの別名にも一致しない。
- *   すなわち、以下の例示において、変数`this_var_is_non_exists`が該当するような状況である場合：
+ * + 変数名の最初の識別子が`currentContext.ignoreNameSet`に含まれている場合
+ *   これは、以下の例示において、変数`userId`を無視するために存在する：
  *   ```handlebars
- *   {{#each hoge as |foo|}}
- *     {{ this_var_is_non_exists }}      {{! 別名`foo`と一致しないため、`null`が返され無視される }}
- *     {{ fooo.this_var_is_non_exists }} {{! 最初の識別子`fooo`が別名`foo`と一致しないため、`null`が返され無視される }}
- *     {{ this.this_var_is_exists }}     {{! 最初の識別子が`this`のため、`null`は返されず評価される }}
- *     {{#each foo.fuga as |bar|}}
- *       {{ this_var_is_non_exists }}        {{! 別名`bar`と一致しないため、`null`が返され無視される }}
- *       {{ bazzzz.this_var_is_non_exists }} {{! 最初の識別子`bazzzz`が別名`bar`とも親の別名`foo`とも一致しないため、`null`が返され無視される }}
- *       {{ bar.this_var_is_exists }}        {{! 最初の識別子`bar`は別名`bar`と一致するため、`null`は返されず評価される }}
- *       {{ foo.this_var_is_exists }}        {{! 最初の識別子`foo`は別名`bar`と一致しないが、親の別名`foo`と一致するため、`null`は返されず評価される }}
- *       {{#each bar.qux}}
- *         {{ this_var_is_exists }}         {{! 直上で別名が定義されていないため、`null`は返されず評価される }}
- *         {{ quxxxxx.this_var_is_exists }} {{! 直上で別名が定義されていないため、`null`は返されず評価される }}
- *         {{ foo.this_var_is_exists }}     {{! 最初の識別子`foo`が祖先の別名`foo`と一致するため、`null`は返されず評価される }}
- *       {{/each}}
- *     {{/each}}
+ *   {{#each users as |user userId|}}
+ *     Id: {{userId}} Name: {{user.name}}
  *   {{/each}}
  *   ```
  */
@@ -370,55 +378,40 @@ function pathExpressionAST2pathList(
     if (!isSelfPathAST(astNode)) {
         const [firstPart, ...secondParts] = astNode.parts;
         if (typeof firstPart === 'string') {
-            if (firstPart === currentContext.aliasName) {
+            const aliasNamedContext = currentContext.aliasNameRecord[firstPart];
+            if (aliasNamedContext) {
                 /**
                  * {{ foo }}
                  * ↓
-                 * currentContext.default
-                 *   if currentContext.aliasName === 'foo'
+                 * currentContext.aliasNameRecord['foo']
+                 *   if currentContext.aliasNameRecord['foo'] is defined
                  *
                  * {{ foo.bar }}
                  * or
                  * {{ foo/bar }}
                  * ↓
-                 * [...currentContext.default, 'bar']
-                 *   if currentContext.aliasName === 'foo'
-                 */
-                return currentContext.default.concat(secondParts);
-            }
-
-            const parentAliasNamedContext = currentContext.parentAliasNameRecord?.[firstPart];
-            if (parentAliasNamedContext) {
-                /**
-                 * {{ foo }}
-                 * ↓
-                 * currentContext.parentAliasNameRecord['foo']
-                 *   if currentContext.parentAliasNameRecord['foo'] is defined
+                 * [...currentContext.aliasNameRecord['foo'], 'bar']
+                 *   if currentContext.aliasNameRecord['foo'] is defined
                  *
-                 * {{ foo.bar }}
+                 * {{ foo.bar.baz }}
                  * or
-                 * {{ foo/bar }}
+                 * {{ foo/bar/baz }}
                  * ↓
-                 * [...currentContext.parentAliasNameRecord['foo'], 'bar']
-                 *   if currentContext.parentAliasNameRecord['foo'] is defined
+                 * [...currentContext.aliasNameRecord['foo'], 'bar', 'baz']
+                 *   if currentContext.aliasNameRecord['foo'] is defined
                  */
-                return parentAliasNamedContext.concat(secondParts);
+                return aliasNamedContext.concat(secondParts);
             }
 
             /**
              * {{ this_var_is_non_exists }}
              * ↓
              * null
-             *   if currentContext.aliasName is defined
-             *
-             * {{ foo.this_var_is_non_exists }}
-             * ↓
-             * null
-             *   if currentContext.aliasName is defined
+             *   if currentContext.ignoreNameSet is defined
              *      and
-             *      currentContext.parentAliasNameRecord['foo'] is not defined
+             *      currentContext.ignoreNameSet has 'this_var_is_non_exists'
              */
-            if (typeof currentContext.aliasName === 'string') return null;
+            if (currentContext.ignoreNameSet?.has(firstPart)) return null;
         }
     }
 
