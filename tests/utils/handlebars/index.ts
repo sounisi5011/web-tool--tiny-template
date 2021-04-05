@@ -3676,4 +3676,152 @@ describe('getVariableRecord()', () => {
             });
         });
     });
+
+    describe('multi syntax', () => {
+        const table: Array<[string | string[], TypeNodeRecord]> = [
+            /**
+             * @see https://handlebarsjs.com/guide/expressions.html#changing-the-context
+             */
+            [
+                [
+                    `{{#each people}}`,
+                    `  {{../prefix}} {{firstname}}`,
+                    `{{/each}}`,
+                ],
+                {
+                    people: arrayType(recordType({
+                        firstname: stringType,
+                    })),
+                    prefix: stringType,
+                },
+            ],
+            [
+                [
+                    `{{#each comments}}`,
+                    `  {{../permalink}}`,
+                    `  {{#if title}}`,
+                    `    {{../permalink}}`,
+                    `  {{/if}}`,
+                    `{{/each}}`,
+                ],
+                {
+                    comments: arrayType(recordType({
+                        title: boolType,
+                    })),
+                    permalink: stringType,
+                },
+            ],
+            /**
+             * @see https://handlebarsjs.com/guide/expressions.html#html-escaping
+             */
+            [
+                [
+                    `raw: {{{specialChars}}}`,
+                    `html-escaped: {{specialChars}}`,
+                ],
+                {
+                    specialChars: stringType,
+                },
+            ],
+            /**
+             * @see https://handlebarsjs.com/guide/expressions.html#subexpressions
+             */
+            [
+                [
+                    `{{#each nav ~}}`,
+                    `  <a href="{{url}}">`,
+                    `    {{~#if test}}`,
+                    `      {{~title}}`,
+                    `    {{~^~}}`,
+                    `      Empty`,
+                    `    {{~/if~}}`,
+                    `  </a>`,
+                    `{{~/each}}`,
+                ],
+                {
+                    nav: arrayType(recordType({
+                        url: stringType,
+                        test: boolType,
+                        title: stringType,
+                    })),
+                },
+            ],
+            /**
+             * @see https://handlebarsjs.com/guide/expressions.html#escaping-handlebars-expressions
+             */
+            [
+                [
+                    `\\{{escaped}}`,
+                    `{{{{raw}}}}`,
+                    `  {{escaped}}`,
+                    `{{{{/raw}}}}`,
+                ],
+                {},
+            ],
+            /**
+             * @see https://handlebarsjs.com/guide/block-helpers.html#the-with-helper
+             */
+            [
+                [
+                    `<div class="entry">`,
+                    `  <h1>{{title}}</h1>`,
+                    `  {{#with story}}`,
+                    `    <div class="intro">{{{intro}}}</div>`,
+                    `    <div class="body">{{{body}}}</div>`,
+                    `  {{/with}}`,
+                    `</div>`,
+                ],
+                {
+                    title: stringType,
+                    story: recordType({
+                        intro: stringType,
+                        body: stringType,
+                    }),
+                },
+            ],
+            /**
+             * @see https://handlebarsjs.com/guide/block-helpers.html#simple-iterators
+             */
+            [
+                [
+                    `<div class="entry">`,
+                    `  <h1>{{title}}</h1>`,
+                    `  {{#with story}}`,
+                    `    <div class="intro">{{{intro}}}</div>`,
+                    `    <div class="body">{{{body}}}</div>`,
+                    `  {{/with}}`,
+                    `</div>`,
+                    `<div class="comments">`,
+                    `  {{#each comments}}`,
+                    `    <div class="comment">`,
+                    `      <h2>{{subject}}</h2>`,
+                    `      {{{body}}}`,
+                    `    </div>`,
+                    `  {{/each}}`,
+                    `</div>`,
+                ],
+                {
+                    title: stringType,
+                    story: recordType({
+                        intro: stringType,
+                        body: stringType,
+                    }),
+                    comments: arrayType(recordType({
+                        subject: stringType,
+                        body: stringType,
+                    })),
+                },
+            ],
+        ];
+        it.each(
+            table.map(([templateData, expected]) =>
+                [
+                    Array.isArray(templateData) ? templateData.join('\n') : templateData,
+                    expected,
+                ] as const
+            ),
+        )('%s', (template, expected) => {
+            expect(getVariableRecord(template)).toStrictEqual(expected);
+        });
+    });
 });
