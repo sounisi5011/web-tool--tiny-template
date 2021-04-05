@@ -1,3 +1,5 @@
+import hbs from 'handlebars';
+
 import { getVariableRecord } from '../../../src/utils/handlebars';
 import {
     createArrayTypeNode as arrayType,
@@ -310,18 +312,38 @@ describe('getVariableRecord()', () => {
          * @see https://handlebarsjs.com/guide/builtin-helpers.html#each
          */
         describe('#each', () => {
-            it.each<[string | string[], TypeNodeRecord]>([
+            describe.each<[string | string[], TypeNodeRecord, Array<[unknown, string | string[] | Error]>?]>([
                 [
                     '<ul> {{#each people}} nothing {{/each}} </ul>',
                     {
                         people: arrayType(undefType),
                     },
+                    [
+                        [
+                            { people: [null] },
+                            `<ul>  nothing  </ul>`,
+                        ],
+                        [
+                            { people: [42, 'foo'] },
+                            `<ul>  nothing  nothing  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{this}}</li> {{/each}} </ul>',
                     {
                         people: arrayType(stringType),
                     },
+                    [
+                        [
+                            { people: [42, 'foo'] },
+                            `<ul>  <li>42</li>  <li>foo</li>  </ul>`,
+                        ],
+                        [
+                            { people: [{ this: 6 }] },
+                            `<ul>  <li>[object Object]</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each data.people.list}} <li>{{this}}</li> {{/each}} </ul>',
@@ -332,12 +354,36 @@ describe('getVariableRecord()', () => {
                             }),
                         }),
                     },
+                    [
+                        [
+                            { data: { people: { list: [42, 'foo'] } } },
+                            `<ul>  <li>42</li>  <li>foo</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li data-index="{{@index}}" data-key="{{@key}}">{{this}}</li> {{/each}} </ul>',
                     {
                         people: arrayType(stringType),
                     },
+                    [
+                        [
+                            {
+                                people: [
+                                    42,
+                                ],
+                            },
+                            `<ul>  <li data-index="0" data-key="0">42</li>  </ul>`,
+                        ],
+                        [
+                            {
+                                people: [
+                                    { '@index': 'in', '@key': 'K' },
+                                ],
+                            },
+                            `<ul>  <li data-index="0" data-key="0">[object Object]</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}}</li> {{/each}} </ul>',
@@ -346,15 +392,43 @@ describe('getVariableRecord()', () => {
                             name: stringType,
                         })),
                     },
+                    [
+                        [
+                            { people: [{ name: 'hoge' }] },
+                            `<ul>  <li>hoge</li>  </ul>`,
+                        ],
+                        [
+                            { people: ['hoge'] },
+                            `<ul>  <li></li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
-                    '<ul> {{#each people}} <li>{{name}}</li> {{else}} <li>{{defaultName}}</li> {{/each}} </ul>',
+                    '<ul> {{#each people}} <li>{{name}}</li> {{else}} <li class=else>{{defaultName}}</li> {{/each}} </ul>',
                     {
                         people: arrayType(recordType({
                             name: stringType,
                         })),
                         defaultName: stringType,
                     },
+                    [
+                        [
+                            { people: [{ name: 'hoge', defaultName: '[!!!]' }], defaultName: '[!]' },
+                            `<ul>  <li>hoge</li>  </ul>`,
+                        ],
+                        [
+                            { people: [], defaultName: '[!]' },
+                            `<ul>  <li class=else>[!]</li>  </ul>`,
+                        ],
+                        [
+                            { people: [{ defaultName: '[!!!]' }], defaultName: '[!]' },
+                            `<ul>  <li></li>  </ul>`,
+                        ],
+                        [
+                            { people: [null], defaultName: '[!]' },
+                            `<ul>  <li></li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each data.people.list}} <li>{{name}}</li> {{/each}} </ul>',
@@ -367,6 +441,12 @@ describe('getVariableRecord()', () => {
                             }),
                         }),
                     },
+                    [
+                        [
+                            { data: { people: { list: [{ name: 'hoge' }] } } },
+                            `<ul>  <li>hoge</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this.desc}}</li> {{/each}} </ul>',
@@ -376,6 +456,16 @@ describe('getVariableRecord()', () => {
                             desc: stringType,
                         })),
                     },
+                    [
+                        [
+                            { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
+                            `<ul>  <li>hoge / bla bla bla</li>  </ul>`,
+                        ],
+                        [
+                            { people: [{ name: 'hoge', this: { desc: 'bla bla bla' }, desc: 'clean!!!' }] },
+                            `<ul>  <li>hoge / clean!!!</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this/desc}}</li> {{/each}} </ul>',
@@ -385,6 +475,16 @@ describe('getVariableRecord()', () => {
                             desc: stringType,
                         })),
                     },
+                    [
+                        [
+                            { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
+                            `<ul>  <li>hoge / bla bla bla</li>  </ul>`,
+                        ],
+                        [
+                            { people: [{ name: 'hoge', this: { desc: 'bla bla bla' }, desc: 'clean!!!' }] },
+                            `<ul>  <li>hoge / clean!!!</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this.this.desc}}</li> {{/each}} </ul>',
@@ -394,6 +494,24 @@ describe('getVariableRecord()', () => {
                             desc: stringType,
                         })),
                     },
+                    [
+                        [
+                            { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
+                            `<ul>  <li>hoge / bla bla bla</li>  </ul>`,
+                        ],
+                        [
+                            {
+                                people: [
+                                    {
+                                        name: 'hoge',
+                                        this: { this: { desc: 'gulp!' }, desc: 'bla bla bla' },
+                                        desc: 'clean!!!',
+                                    },
+                                ],
+                            },
+                            `<ul>  <li>hoge / clean!!!</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this/this/desc}}</li> {{/each}} </ul>',
@@ -403,6 +521,24 @@ describe('getVariableRecord()', () => {
                             desc: stringType,
                         })),
                     },
+                    [
+                        [
+                            { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
+                            `<ul>  <li>hoge / bla bla bla</li>  </ul>`,
+                        ],
+                        [
+                            {
+                                people: [
+                                    {
+                                        name: 'hoge',
+                                        this: { this: { desc: 'gulp!' }, desc: 'bla bla bla' },
+                                        desc: 'clean!!!',
+                                    },
+                                ],
+                            },
+                            `<ul>  <li>hoge / clean!!!</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this.this/desc}}</li> {{/each}} </ul>',
@@ -412,6 +548,24 @@ describe('getVariableRecord()', () => {
                             desc: stringType,
                         })),
                     },
+                    [
+                        [
+                            { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
+                            `<ul>  <li>hoge / bla bla bla</li>  </ul>`,
+                        ],
+                        [
+                            {
+                                people: [
+                                    {
+                                        name: 'hoge',
+                                        this: { this: { desc: 'gulp!' }, desc: 'bla bla bla' },
+                                        desc: 'clean!!!',
+                                    },
+                                ],
+                            },
+                            `<ul>  <li>hoge / clean!!!</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this/this.desc}}</li> {{/each}} </ul>',
@@ -421,6 +575,24 @@ describe('getVariableRecord()', () => {
                             desc: stringType,
                         })),
                     },
+                    [
+                        [
+                            { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
+                            `<ul>  <li>hoge / bla bla bla</li>  </ul>`,
+                        ],
+                        [
+                            {
+                                people: [
+                                    {
+                                        name: 'hoge',
+                                        this: { this: { desc: 'gulp!' }, desc: 'bla bla bla' },
+                                        desc: 'clean!!!',
+                                    },
+                                ],
+                            },
+                            `<ul>  <li>hoge / clean!!!</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this.this/this.desc}}</li> {{/each}} </ul>',
@@ -430,6 +602,24 @@ describe('getVariableRecord()', () => {
                             desc: stringType,
                         })),
                     },
+                    [
+                        [
+                            { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
+                            `<ul>  <li>hoge / bla bla bla</li>  </ul>`,
+                        ],
+                        [
+                            {
+                                people: [
+                                    {
+                                        name: 'hoge',
+                                        this: { this: { this: { desc: '!#?$' }, desc: 'gulp!' }, desc: 'bla bla bla' },
+                                        desc: 'clean!!!',
+                                    },
+                                ],
+                            },
+                            `<ul>  <li>hoge / clean!!!</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this/this.this/desc}}</li> {{/each}} </ul>',
@@ -439,6 +629,24 @@ describe('getVariableRecord()', () => {
                             desc: stringType,
                         })),
                     },
+                    [
+                        [
+                            { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
+                            `<ul>  <li>hoge / bla bla bla</li>  </ul>`,
+                        ],
+                        [
+                            {
+                                people: [
+                                    {
+                                        name: 'hoge',
+                                        this: { this: { this: { desc: '!#?$' }, desc: 'gulp!' }, desc: 'bla bla bla' },
+                                        desc: 'clean!!!',
+                                    },
+                                ],
+                            },
+                            `<ul>  <li>hoge / clean!!!</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li data-index="{{@index}}" data-key="{{@key}}">{{name}}</li> {{/each}} </ul>',
@@ -447,6 +655,24 @@ describe('getVariableRecord()', () => {
                             name: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                people: [
+                                    { name: 'hoge' },
+                                ],
+                            },
+                            `<ul>  <li data-index="0" data-key="0">hoge</li>  </ul>`,
+                        ],
+                        [
+                            {
+                                people: [
+                                    { name: 'fuga', '@index': 'in', '@key': 'K' },
+                                ],
+                            },
+                            `<ul>  <li data-index="0" data-key="0">fuga</li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} <pre>{{this}}</pre></li> {{/each}} </ul>',
@@ -458,6 +684,24 @@ describe('getVariableRecord()', () => {
                             }),
                         ])),
                     },
+                    [
+                        [
+                            {
+                                people: [
+                                    { name: 'hoge', this: '[@]' },
+                                ],
+                            },
+                            `<ul>  <li>hoge <pre>[object Object]</pre></li>  </ul>`,
+                        ],
+                        [
+                            {
+                                people: [
+                                    42,
+                                ],
+                            },
+                            `<ul>  <li> <pre>42</pre></li>  </ul>`,
+                        ],
+                    ],
                 ],
                 [
                     '<dl> {{#each data}} <dt>{{title}}</dt> <dd>{{desc}}</dd> {{/each}} </dl>',
@@ -467,6 +711,16 @@ describe('getVariableRecord()', () => {
                             desc: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                data: [
+                                    { title: 'ズンドコベロンチョ', desc: 'え？知らないの？？？' },
+                                ],
+                            },
+                            `<dl>  <dt>ズンドコベロンチョ</dt> <dd>え？知らないの？？？</dd>  </dl>`,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each foo this_param_is_invalid}} {{hoge}} {{/each}}',
@@ -475,6 +729,12 @@ describe('getVariableRecord()', () => {
                             hoge: stringType,
                         })),
                     },
+                    [
+                        [
+                            { foo: { hoge: 42 } },
+                            new Error('Must pass iterator to #each'),
+                        ],
+                    ],
                 ],
                 [
                     '{{#each foo}} {{#each bar}} {{hoge}} {{else}} {{default}} {{/each}} {{/each}}',
@@ -486,6 +746,34 @@ describe('getVariableRecord()', () => {
                             default: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                foo: [
+                                    {
+                                        bar: [
+                                            { hoge: 42, default: '[/foo/*/bar/*/]' },
+                                        ],
+                                        default: '[/foo/*/]',
+                                    },
+                                ],
+                                default: '[/]',
+                            },
+                            `  42  `,
+                        ],
+                        [
+                            {
+                                foo: [
+                                    {
+                                        bar: [],
+                                        default: '[/foo/*/]',
+                                    },
+                                ],
+                                default: '[/]',
+                            },
+                            `  [/foo/*/]  `,
+                        ],
+                    ],
                 ],
                 /**
                  * @see https://handlebarsjs.com/guide/block-helpers.html#block-parameters
@@ -495,6 +783,16 @@ describe('getVariableRecord()', () => {
                     {
                         users: arrayType(stringType),
                     },
+                    [
+                        [
+                            { users: [42], userId: -1 },
+                            ` Id: 0 Name: 42 `,
+                        ],
+                        [
+                            { users: [{ user: 42, userId: 'IIU' }], userId: -1 },
+                            ` Id: 0 Name: [object Object] `,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each users as |user|}} nothing {{/each}}',
@@ -503,16 +801,75 @@ describe('getVariableRecord()', () => {
                     },
                 ],
                 [
-                    '{{#each users as |user|}} {{this_var_is_non_exists}} {{/each}}',
+                    '{{#each users as |user|}} {{hoge}} {{/each}}',
                     {
-                        users: arrayType(undefType),
+                        users: arrayType(recordType({
+                            hoge: stringType,
+                        })),
                     },
+                    [
+                        [
+                            {
+                                users: [1],
+                                hoge: -1,
+                            },
+                            `  `,
+                        ],
+                        [
+                            {
+                                users: [{}],
+                                hoge: -1,
+                            },
+                            `  `,
+                        ],
+                        [
+                            {
+                                users: [{ hoge: -2 }],
+                            },
+                            ` -2 `,
+                        ],
+                        [
+                            {
+                                users: [{ hoge: -2 }],
+                                hoge: -1,
+                            },
+                            ` -2 `,
+                        ],
+                        [
+                            {
+                                users: [{ user: { hoge: -3 } }],
+                                hoge: -1,
+                            },
+                            `  `,
+                        ],
+                        [
+                            {
+                                users: [{ user: { hoge: -3 }, hoge: -2 }],
+                                hoge: -1,
+                            },
+                            ` -2 `,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each users as |user|}} Name: {{user}} {{/each}}',
                     {
                         users: arrayType(stringType),
                     },
+                    [
+                        [
+                            {
+                                users: [1],
+                            },
+                            ` Name: 1 `,
+                        ],
+                        [
+                            {
+                                users: [{ user: 6 }],
+                            },
+                            ` Name: [object Object] `,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each users as |user|}} Name: {{user}} {{else}} {{default}} {{/each}}',
@@ -520,24 +877,117 @@ describe('getVariableRecord()', () => {
                         users: arrayType(stringType),
                         default: stringType,
                     },
+                    [
+                        [
+                            {
+                                users: [42],
+                                default: 'Anonymous',
+                            },
+                            ` Name: 42 `,
+                        ],
+                        [
+                            {
+                                users: [{ user: 42 }],
+                                default: 'Anonymous',
+                            },
+                            ` Name: [object Object] `,
+                        ],
+                        [
+                            {
+                                users: [],
+                                default: 'Anonymous',
+                            },
+                            ` Anonymous `,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each users as |user|}} Name: {{this}} {{/each}}',
                     {
                         users: arrayType(stringType),
                     },
+                    [
+                        [
+                            {
+                                users: [42],
+                            },
+                            ` Name: 42 `,
+                        ],
+                        [
+                            {
+                                users: [{ user: 42 }],
+                            },
+                            ` Name: [object Object] `,
+                        ],
+                    ],
                 ],
                 [
-                    '{{#each users as |user|}} Name: {{user}} {{this_var_is_non_exists}} {{/each}}',
+                    '{{#each users as |user|}} Name: {{user}} {{hoge}} {{/each}}',
                     {
-                        users: arrayType(stringType),
+                        users: arrayType(unionType([
+                            stringType,
+                            recordType({
+                                hoge: stringType,
+                            }),
+                        ])),
                     },
+                    [
+                        [
+                            {
+                                users: [42],
+                                hoge: -1,
+                            },
+                            ` Name: 42  `,
+                        ],
+                        [
+                            {
+                                users: [{ user: 42 }],
+                                hoge: -1,
+                            },
+                            ` Name: [object Object]  `,
+                        ],
+                        [
+                            {
+                                users: [{ user: 42, hoge: -2 }],
+                                hoge: -1,
+                            },
+                            ` Name: [object Object] -2 `,
+                        ],
+                    ],
                 ],
                 [
-                    '{{#each users as |user|}} Name: {{this}} {{this_var_is_non_exists}} {{/each}}',
+                    '{{#each users as |user|}} Name: {{this}} {{hoge}} {{/each}}',
                     {
-                        users: arrayType(stringType),
+                        users: arrayType(unionType([
+                            stringType,
+                            recordType({
+                                hoge: stringType,
+                            }),
+                        ])),
                     },
+                    [
+                        [
+                            {
+                                users: [42],
+                                hoge: -1,
+                            },
+                            ` Name: 42  `,
+                        ],
+                        [
+                            {
+                                users: [{ user: 42 }],
+                                hoge: -1,
+                            },
+                            ` Name: [object Object]  `,
+                        ],
+                        [
+                            {
+                                users: [{ user: 42, hoge: -2 }],
+                                hoge: -1,
+                            },
+                            ` Name: [object Object] -2 `,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each users as |user userId|}} Id: {{userId}} Name: {{user.name}} {{/each}}',
@@ -546,6 +996,20 @@ describe('getVariableRecord()', () => {
                             name: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                users: [42],
+                            },
+                            ` Id: 0 Name:  `,
+                        ],
+                        [
+                            {
+                                users: [{ name: 'hoge' }],
+                            },
+                            ` Id: 0 Name: hoge `,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each users as |user|}} Id: {{user.id}} {{/each}}',
@@ -554,6 +1018,20 @@ describe('getVariableRecord()', () => {
                             id: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                users: [42],
+                            },
+                            ` Id:  `,
+                        ],
+                        [
+                            {
+                                users: [{ id: 42 }],
+                            },
+                            ` Id: 42 `,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each users as |user|}} Id: {{this.id}} {{/each}}',
@@ -562,22 +1040,84 @@ describe('getVariableRecord()', () => {
                             id: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                users: [42],
+                            },
+                            ` Id:  `,
+                        ],
+                        [
+                            {
+                                users: [{ id: 42 }],
+                            },
+                            ` Id: 42 `,
+                        ],
+                    ],
                 ],
                 [
-                    '{{#each users as |user|}} Id: {{user.id}} {{this_var_is_non_exists}} {{/each}}',
+                    '{{#each users as |user|}} Id: {{user.id}} {{hoge}} {{/each}}',
                     {
                         users: arrayType(recordType({
                             id: stringType,
+                            hoge: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                users: [42],
+                                hoge: -1,
+                            },
+                            ` Id:   `,
+                        ],
+                        [
+                            {
+                                users: [{ id: 42 }],
+                                hoge: -1,
+                            },
+                            ` Id: 42  `,
+                        ],
+                        [
+                            {
+                                users: [{ id: 42, hoge: -2 }],
+                                hoge: -1,
+                            },
+                            ` Id: 42 -2 `,
+                        ],
+                    ],
                 ],
                 [
-                    '{{#each users as |user|}} Id: {{this.id}} {{this_var_is_non_exists}} {{/each}}',
+                    '{{#each users as |user|}} Id: {{this.id}} {{hoge}} {{/each}}',
                     {
                         users: arrayType(recordType({
                             id: stringType,
+                            hoge: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                users: [42],
+                                hoge: -1,
+                            },
+                            ` Id:   `,
+                        ],
+                        [
+                            {
+                                users: [{ id: 42 }],
+                                hoge: -1,
+                            },
+                            ` Id: 42  `,
+                        ],
+                        [
+                            {
+                                users: [{ id: 42, hoge: -2 }],
+                                hoge: -1,
+                            },
+                            ` Id: 42 -2 `,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each users as |user|}} Id: {{this.id}} Name: {{user}} {{/each}}',
@@ -589,17 +1129,65 @@ describe('getVariableRecord()', () => {
                             }),
                         ])),
                     },
+                    [
+                        [
+                            {
+                                users: [
+                                    42,
+                                ],
+                            },
+                            ` Id:  Name: 42 `,
+                        ],
+                        [
+                            {
+                                users: [
+                                    { id: 42 },
+                                ],
+                            },
+                            ` Id: 42 Name: [object Object] `,
+                        ],
+                    ],
                 ],
                 [
-                    '{{#each users as |user|}} Id: {{this.id}} Name: {{user}} {{this_var_is_non_exists}} {{/each}}',
+                    '{{#each users as |user|}} Id: {{this.id}} Name: {{user}} {{hoge}} {{/each}}',
                     {
                         users: arrayType(unionType([
                             stringType,
                             recordType({
                                 id: stringType,
+                                hoge: stringType,
                             }),
                         ])),
                     },
+                    [
+                        [
+                            {
+                                users: [
+                                    42,
+                                ],
+                                hoge: -1,
+                            },
+                            ` Id:  Name: 42  `,
+                        ],
+                        [
+                            {
+                                users: [
+                                    { id: 42 },
+                                ],
+                                hoge: -1,
+                            },
+                            ` Id: 42 Name: [object Object]  `,
+                        ],
+                        [
+                            {
+                                users: [
+                                    { id: 42, hoge: -2 },
+                                ],
+                                hoge: -1,
+                            },
+                            ` Id: 42 Name: [object Object] -2 `,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each users as |user|}} Id: {{this.id}} Name: {{user.name}} {{/each}}',
@@ -609,15 +1197,54 @@ describe('getVariableRecord()', () => {
                             name: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                users: [
+                                    { id: 42, name: 'Hoge' },
+                                ],
+                            },
+                            ` Id: 42 Name: Hoge `,
+                        ],
+                        [
+                            {
+                                users: [
+                                    { this: { id: 6 }, id: 42, name: 'Hoge' },
+                                ],
+                            },
+                            ` Id: 42 Name: Hoge `,
+                        ],
+                    ],
                 ],
                 [
-                    '{{#each users as |user|}} Id: {{this.id}} Name: {{user.name}} {{this_var_is_non_exists}} {{/each}}',
+                    '{{#each users as |user|}} Id: {{this.id}} Name: {{user.name}} {{hoge}} {{/each}}',
                     {
                         users: arrayType(recordType({
                             id: stringType,
                             name: stringType,
+                            hoge: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                users: [
+                                    { id: 42, name: 'Hoge', hoge: -9 },
+                                ],
+                                hoge: -1,
+                            },
+                            ` Id: 42 Name: Hoge -9 `,
+                        ],
+                        [
+                            {
+                                users: [
+                                    { id: 42, name: 'Hoge' },
+                                ],
+                                hoge: -1,
+                            },
+                            ` Id: 42 Name: Hoge  `,
+                        ],
+                    ],
                 ],
                 [
                     '{{#each users as |user userId this_param_is_invalid|}} Id: {{userId}} Name: {{user.name}} {{/each}}',
@@ -626,6 +1253,16 @@ describe('getVariableRecord()', () => {
                             name: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                users: [
+                                    { name: 'Foo' },
+                                ],
+                            },
+                            ` Id: 0 Name: Foo `,
+                        ],
+                    ],
                 ],
                 [
                     [
@@ -643,6 +1280,38 @@ describe('getVariableRecord()', () => {
                             })),
                         })),
                     },
+                    [
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        book: [
+                                            {
+                                                id: 'B-02',
+                                                user: {
+                                                    id: 'U-03',
+                                                },
+                                                book: {
+                                                    id: 'B-03',
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            [
+                                `    User Id: U-02 Book Id: B-02`,
+                                ``,
+                            ],
+                        ],
+                    ],
                 ],
                 [
                     [
@@ -663,6 +1332,84 @@ describe('getVariableRecord()', () => {
                             errorMsg: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                errorMsg: 'E-0001',
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        errorMsg: 'E-0002',
+                                        book: [
+                                            {
+                                                id: 'B-02',
+                                                errorMsg: 'E-0003',
+                                                user: {
+                                                    id: 'U-03',
+                                                },
+                                                book: {
+                                                    id: 'B-03',
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            [
+                                `    User Id: U-02 Book Id: B-02`,
+                                ``,
+                            ],
+                        ],
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                errorMsg: 'E-0001',
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        errorMsg: 'E-0002',
+                                        book: [],
+                                    },
+                                ],
+                            },
+                            [
+                                `    E-0002`,
+                                ``,
+                            ],
+                        ],
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                errorMsg: 'E-0001',
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        book: [],
+                                    },
+                                ],
+                            },
+                            [
+                                `    `,
+                                ``,
+                            ],
+                        ],
+                    ],
                 ],
                 [
                     [
@@ -683,6 +1430,84 @@ describe('getVariableRecord()', () => {
                             errorMsg: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                errorMsg: 'E-0001',
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        errorMsg: 'E-0002',
+                                        book: [
+                                            {
+                                                id: 'B-02',
+                                                errorMsg: 'E-0003',
+                                                user: {
+                                                    id: 'U-03',
+                                                },
+                                                book: {
+                                                    id: 'B-03',
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            [
+                                `    User Id: U-02 Book Id: B-02`,
+                                ``,
+                            ],
+                        ],
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                errorMsg: 'E-0001',
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        errorMsg: 'E-0002',
+                                        book: [],
+                                    },
+                                ],
+                            },
+                            [
+                                `    E-0002`,
+                                ``,
+                            ],
+                        ],
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                errorMsg: 'E-0001',
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        book: [],
+                                    },
+                                ],
+                            },
+                            [
+                                `    `,
+                                ``,
+                            ],
+                        ],
+                    ],
                 ],
                 [
                     [
@@ -703,6 +1528,84 @@ describe('getVariableRecord()', () => {
                             errorMsg: stringType,
                         })),
                     },
+                    [
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                errorMsg: 'E-0001',
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        errorMsg: 'E-0002',
+                                        book: [
+                                            {
+                                                id: 'B-02',
+                                                errorMsg: 'E-0003',
+                                                user: {
+                                                    id: 'U-03',
+                                                },
+                                                book: {
+                                                    id: 'B-03',
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            [
+                                `    User Id: U-02 Book Id: B-02`,
+                                ``,
+                            ],
+                        ],
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                errorMsg: 'E-0001',
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        errorMsg: 'E-0002',
+                                        book: [],
+                                    },
+                                ],
+                            },
+                            [
+                                `    E-0002`,
+                                ``,
+                            ],
+                        ],
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                errorMsg: 'E-0001',
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        book: [],
+                                    },
+                                ],
+                            },
+                            [
+                                `    `,
+                                ``,
+                            ],
+                        ],
+                    ],
                 ],
                 [
                     [
@@ -720,6 +1623,38 @@ describe('getVariableRecord()', () => {
                             })),
                         })),
                     },
+                    [
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        book: [
+                                            {
+                                                id: 'B-02',
+                                                user: {
+                                                    id: 'U-03',
+                                                },
+                                                book: {
+                                                    id: 'B-03',
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            [
+                                `    User Id: U-02 Book Id: B-02`,
+                                ``,
+                            ],
+                        ],
+                    ],
                 ],
                 [
                     [
@@ -737,6 +1672,38 @@ describe('getVariableRecord()', () => {
                             })),
                         })),
                     },
+                    [
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        book: [
+                                            {
+                                                id: 'B-02',
+                                                user: {
+                                                    id: 'U-03',
+                                                },
+                                                book: {
+                                                    id: 'B-03',
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            [
+                                `    User Id: U-02 Book Id: B-02`,
+                                ``,
+                            ],
+                        ],
+                    ],
                 ],
                 [
                     [
@@ -756,10 +1723,60 @@ describe('getVariableRecord()', () => {
                             })),
                         })),
                     },
+                    [
+                        [
+                            {
+                                user: {
+                                    id: 'U-01',
+                                },
+                                book: {
+                                    id: 'B-01',
+                                },
+                                users: [
+                                    {
+                                        id: 'U-02',
+                                        book: [
+                                            {
+                                                id: 'B-02',
+                                                user: {
+                                                    id: 'U-03',
+                                                },
+                                                book: {
+                                                    id: 'B-03',
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            [
+                                `    User Id: U-03 Book Id: B-02`,
+                                ``,
+                            ],
+                        ],
+                    ],
                 ],
-            ])('%s', (templateData, expected) => {
+            ])('%s', (templateData, expected, renderTestData) => {
                 const template: string = Array.isArray(templateData) ? templateData.join('\n') : templateData;
-                expect(getVariableRecord(template)).toStrictEqual(expected);
+
+                it('_', () => {
+                    expect(getVariableRecord(template)).toStrictEqual(expected);
+                });
+
+                if (renderTestData) {
+                    it.each(
+                        renderTestData.map(([data, result], index) =>
+                            [`render test #${String(index + 1).padStart(2, '0')}`, data, result] as const
+                        ),
+                    )('%s', (_, data, expected) => {
+                        if (expected instanceof Error) {
+                            expect(() => hbs.compile(template)(data)).toThrow(expected);
+                        } else {
+                            expect(hbs.compile(template)(data))
+                                .toBe(Array.isArray(expected) ? expected.join('\n') : expected);
+                        }
+                    });
+                }
             });
         });
     });
