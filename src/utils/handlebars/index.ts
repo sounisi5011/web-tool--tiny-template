@@ -166,27 +166,27 @@ function assignEachBlockAST2node(
     if (!parentContextPathList) return;
     const contextPathList = parentContextPathList.concat(NodeStream.arrayIndex);
     /**
+     * 以下のテンプレートが指定された場合の、`hoge`や`fuga`に対応する値の配列
+     * ```handlebars
+     * {{#each foo as |hoge fuga|}} ... {{/each}}
+     * ```
+     */
+    const blockParams = astNode.program.blockParams as (typeof astNode.program.blockParams | undefined);
+    /**
      * 以下のテンプレートが指定された場合の、`hoge`に相当する`string`型の値
      * ```handlebars
      * {{#each foo as |hoge|}} ... {{/each}}
      * ```
      */
-    const contextName = astNode.program.blockParams?.[0];
-    /**
-     * 以下のテンプレートが指定された場合の、`fuga`に相当する`string`型の値
-     * ```handlebars
-     * {{#each foo as |hoge fuga|}} ... {{/each}}
-     * ```
-     */
-    const fieldName = astNode.program.blockParams?.[1];
+    const contextName = blockParams?.[0];
 
     nodeStream.add(parentContextPathList, 'array');
 
     const childContext: ContextPaths = {
         ...currentContext,
         default: contextPathList,
-        ...typeof fieldName === 'string'
-            ? { ignoreNameSet: new Set(currentContext.ignoreNameSet).add(fieldName) }
+        ...blockParams && blockParams.length > 0
+            ? { ignoreNameSet: mergeSet(currentContext.ignoreNameSet, blockParams) }
             : {},
     };
     if (typeof contextName === 'string') {

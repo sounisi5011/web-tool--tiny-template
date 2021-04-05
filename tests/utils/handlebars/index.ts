@@ -1741,6 +1741,61 @@ describe('getVariableRecord()', () => {
                     ],
                 ],
                 [
+                    '{{#each users as |user userId p1 p2 p3|}} Id: {{userId}} Name: {{user.name}} / {{p1}},{{p2}},{{p3}},{{p4}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            name: stringType,
+                            p4: stringType,
+                        })),
+                    },
+                    [
+                        [
+                            {
+                                users: [
+                                    {
+                                        name: 'Foo',
+                                        p1: '[1]',
+                                        p2: '[2]',
+                                        p3: '[3]',
+                                        p4: '[4]',
+                                    },
+                                ],
+                            },
+                            ` Id: 0 Name: Foo / ,,,[4] `,
+                        ],
+                        [
+                            {
+                                users: [
+                                    {
+                                        name: 'Foo',
+                                        p1: '[1]',
+                                        p2: '[2]',
+                                        p3: '[3]',
+                                        p4: '[4]',
+                                    },
+                                ],
+                                p1: '(1)',
+                                p2: '(2)',
+                                p3: '(3)',
+                                p4: '(4)',
+                            },
+                            ` Id: 0 Name: Foo / ,,,[4] `,
+                        ],
+                        [
+                            {
+                                users: [
+                                    { name: 'Foo' },
+                                ],
+                                p1: '(1)',
+                                p2: '(2)',
+                                p3: '(3)',
+                                p4: '(4)',
+                            },
+                            ` Id: 0 Name: Foo / ,,, `,
+                        ],
+                    ],
+                ],
+                [
                     [
                         `{{#each users as |user|}}`,
                         `  {{#each user.book as |book|}}`,
