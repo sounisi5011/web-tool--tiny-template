@@ -412,12 +412,10 @@ function assignWithBlockAST2node(
 /**
  * Handlebarsの変数を示す`PathExpression`ASTノードを`PathList`型の配列に変換する
  *
- * @param ignoreAtData
- * `@key`や`@index`のような{@link https://handlebarsjs.com/api-reference/data-variables.html `@data`変数}を無視する
  * @returns
  * 以下のいずれかの場合は`null`。それ以外の場合は`PathList`型の配列値
  * + 第一引数`astNode`の値が`PathExpression`ASTノードではない
- * + 第三引数`ignoreAtData`の値が`true`で、かつ、対象の変数が{@link https://handlebarsjs.com/api-reference/data-variables.html `@data`変数}である
+ * + 対象の変数が解析不能な種別の{@link https://handlebarsjs.com/api-reference/data-variables.html `@data`変数}である
  * + 参照先の変数名が存在しない場合
  *   これは、`../`でルート・コンテキストの外を参照したような場合に発生する
  *   ```handlebars
@@ -434,12 +432,19 @@ function assignWithBlockAST2node(
  *   {{/each}}
  *   ```
  */
-function pathExpressionAST2pathList(
-    astNode: HandlebarsAST.AllNode,
-    currentContext: ContextPaths,
-    ignoreAtData = true,
-): PathList | null {
-    if (!isMatchType(astNode, 'PathExpression') || (ignoreAtData && astNode.data)) return null;
+function pathExpressionAST2pathList(astNode: HandlebarsAST.AllNode, currentContext: ContextPaths): PathList | null {
+    if (!isMatchType(astNode, 'PathExpression')) return null;
+
+    if (astNode.data) {
+        const [dataType, ...parts] = astNode.parts;
+        if (dataType === 'root') {
+            /**
+             * @see https://handlebarsjs.com/api-reference/data-variables.html#root
+             */
+            return parts;
+        }
+        return null;
+    }
 
     if (astNode.depth > 0) {
         /**

@@ -3677,6 +3677,175 @@ describe('getVariableRecord()', () => {
         });
     });
 
+    describe('@data variables', () => {
+        /**
+         * @see https://handlebarsjs.com/api-reference/data-variables.html#root
+         */
+        describe('@root', () => {
+            describe.each<[string, TypeNodeRecord, Array<[unknown, string | string[] | Error]>?]>([
+                [
+                    `{{@root}}`,
+                    { '': stringType },
+                    [
+                        [
+                            42,
+                            `42`,
+                        ],
+                    ],
+                ],
+                [
+                    `{{@root.foo}}`,
+                    { foo: stringType },
+                    [
+                        [
+                            { foo: 42 },
+                            `42`,
+                        ],
+                    ],
+                ],
+                [
+                    `{{#each array}} {{@root.foo}} {{/each}}`,
+                    {
+                        array: arrayType(undefType),
+                        foo: stringType,
+                    },
+                    [
+                        [
+                            {
+                                array: [0],
+                                foo: 42,
+                            },
+                            ` 42 `,
+                        ],
+                        [
+                            {
+                                array: [0, 1],
+                                foo: 42,
+                            },
+                            ` 42  42 `,
+                        ],
+                        [
+                            {
+                                array: [{
+                                    '@root.foo': 'dummy#01',
+                                    '@root': { foo: 'dummy#02' },
+                                }],
+                                foo: 42,
+                            },
+                            ` 42 `,
+                        ],
+                        [
+                            {
+                                array: [{
+                                    '@root.foo': 'dummy#01',
+                                    '@root': { foo: 'dummy#02' },
+                                }],
+                            },
+                            `  `,
+                        ],
+                    ],
+                ],
+                [
+                    `{{#each array}} {{@root.foo.bar}} {{/each}}`,
+                    {
+                        array: arrayType(undefType),
+                        foo: recordType({
+                            bar: stringType,
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                array: [0],
+                                foo: {
+                                    bar: 42,
+                                },
+                            },
+                            ` 42 `,
+                        ],
+                        [
+                            {
+                                array: [0, 1],
+                                foo: 42,
+                            },
+                            `    `,
+                        ],
+                        [
+                            {
+                                array: [{
+                                    '@root.foo.bar': 'dummy#01',
+                                    '@root': {
+                                        'foo.bar': 'dummy#02',
+                                        foo: { bar: 'dummy#03' },
+                                    },
+                                }],
+                                foo: {
+                                    bar: 42,
+                                },
+                            },
+                            ` 42 `,
+                        ],
+                        [
+                            {
+                                array: [{
+                                    '@root.foo.bar': 'dummy#01',
+                                    '@root': {
+                                        'foo.bar': 'dummy#02',
+                                        foo: { bar: 'dummy#03' },
+                                    },
+                                }],
+                            },
+                            `  `,
+                        ],
+                    ],
+                ],
+                [
+                    `{{@root.foo}} {{#with data}} {{@root.bar}} {{#each list}} {{@root.baz}} {{/each}} {{/with}}`,
+                    {
+                        foo: stringType,
+                        data: recordType({
+                            list: arrayType(undefType),
+                        }),
+                        bar: stringType,
+                        baz: stringType,
+                    },
+                    [
+                        [
+                            {
+                                foo: 'S#01',
+                                bar: 'S#02',
+                                baz: 'S#03',
+                                data: {
+                                    list: [null, null, 42],
+                                },
+                            },
+                            `S#01  S#02  S#03  S#03  S#03  `,
+                        ],
+                    ],
+                ],
+            ])('%s', (template, expected, renderTestData) => {
+                it('_', () => {
+                    expect(getVariableRecord(template)).toStrictEqual(expected);
+                });
+
+                if (renderTestData) {
+                    it.each(
+                        renderTestData.map(([data, result], index) =>
+                            [`render test #${String(index + 1).padStart(2, '0')}`, data, result] as const
+                        ),
+                    )('%s', (_, data, expected) => {
+                        if (expected instanceof Error) {
+                            expect(() => hbs.compile(template)(data)).toThrow(expected);
+                        } else {
+                            expect(hbs.compile(template)(data))
+                                .toBe(Array.isArray(expected) ? expected.join('\n') : expected);
+                        }
+                    });
+                }
+            });
+        });
+    });
+
     describe('multi syntax', () => {
         const table: Array<[string | string[], TypeNodeRecord]> = [
             /**
