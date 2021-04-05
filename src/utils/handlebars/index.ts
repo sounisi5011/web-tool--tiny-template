@@ -8,6 +8,12 @@ import { NodeStream, PathList } from './node/stream';
 
 interface ContextPaths {
     readonly default: PathList;
+    /**
+     * 祖先のコンテキストを示す`PathList`型の値を格納した読み取り専用配列。
+     * 0番目に直近の親、1番目以降に近い順の祖先を挿入する。
+     * この値は、接頭辞に`../`が含まれる`{{ ../foo }}`のような変数名の解析で使われる。
+     */
+    readonly ancestorContextList: readonly PathList[];
     readonly aliasNameRecord: Readonly<Record<string, PathList>>;
     readonly ignoreNameSet?: ReadonlySet<string>;
 }
@@ -15,7 +21,11 @@ interface ContextPaths {
 export function getVariableRecord(template: string): TypeNodeRecord {
     const nodeStream = new NodeStream();
     const ast = hbs.parse(template);
-    const node = assignAST2node(ast, nodeStream, { default: [], aliasNameRecord: {} });
+    const node = assignAST2node(ast, nodeStream, {
+        default: [],
+        ancestorContextList: [],
+        aliasNameRecord: {},
+    });
 
     if (node.type === 'record') {
         return node.children;
@@ -183,13 +193,6 @@ function assignEachBlockAST2node(
 
     nodeStream.add(parentContextPathList, 'array');
 
-    const childContext: ContextPaths = {
-        ...currentContext,
-        default: contextPathList,
-        ...blockParams && blockParams.length > 0
-            ? { ignoreNameSet: mergeSet(currentContext.ignoreNameSet, blockParams) }
-            : {},
-    };
     if (typeof contextName === 'string') {
         /**
          * {{#each foo as |bar|}} {{bar.hoge}} {{/each}}
@@ -274,13 +277,11 @@ function assignEachBlockAST2node(
          *   }
          * }
          */
-        assignAST2node(astNode.program, nodeStream, {
-            ...childContext,
-            aliasNameRecord: {
-                ...currentContext.aliasNameRecord,
-                [contextName]: contextPathList,
-            },
-        });
+        assignAST2node(
+            astNode.program,
+            nodeStream,
+            createChildContext(currentContext, contextPathList, blockParams, contextName),
+        );
     } else {
         /**
          * {{#each foo}} {{hoge}} {{/each}}
@@ -344,7 +345,11 @@ function assignEachBlockAST2node(
          *   }
          * }
          */
-        assignAST2node(astNode.program, nodeStream, childContext);
+        assignAST2node(
+            astNode.program,
+            nodeStream,
+            createChildContext(currentContext, contextPathList, blockParams),
+        );
     }
 
     /**
@@ -390,25 +395,10 @@ function assignWithBlockAST2node(
 
     nodeStream.add(contextPathList, 'record');
 
-    const childContext: ContextPaths = {
-        ...currentContext,
-        default: contextPathList,
-        ...blockParams && blockParams.length > 0
-            ? { ignoreNameSet: mergeSet(currentContext.ignoreNameSet, blockParams) }
-            : {},
-    };
     assignAST2node(
         astNode.program,
         nodeStream,
-        typeof contextName === 'string'
-            ? {
-                ...childContext,
-                aliasNameRecord: {
-                    ...currentContext.aliasNameRecord,
-                    [contextName]: contextPathList,
-                },
-            }
-            : childContext,
+        createChildContext(currentContext, contextPathList, blockParams, contextName),
     );
 
     /**
@@ -428,6 +418,14 @@ function assignWithBlockAST2node(
  * 以下のいずれかの場合は`null`。それ以外の場合は`PathList`型の配列値
  * + 第一引数`astNode`の値が`PathExpression`ASTノードではない
  * + 第三引数`ignoreAtData`の値が`true`で、かつ、対象の変数が{@link https://handlebarsjs.com/api-reference/data-variables.html `@data`変数}である
+ * + 参照先の変数名が存在しない場合
+ *   これは、`../`でルート・コンテキストの外を参照したような場合に発生する
+ *   ```handlebars
+ *   {{#with data}}
+ *     {{../value}}    {{! 親のコンテキストは存在する }}
+ *     {{../../value}} {{! 親の親のコンテキストは存在しない。この場合に`null`を返す }}
+ *   {{/with}}
+ *   ```
  * + 変数名の最初の識別子が`currentContext.ignoreNameSet`に含まれている場合
  *   これは、以下の例示において、変数`userId`を無視するために存在する：
  *   ```handlebars
@@ -442,6 +440,32 @@ function pathExpressionAST2pathList(
     ignoreAtData = true,
 ): PathList | null {
     if (!isMatchType(astNode, 'PathExpression') || (ignoreAtData && astNode.data)) return null;
+
+    if (astNode.depth > 0) {
+        /**
+         * {{ ../foo }}
+         * ↓
+         * [...currentContext.ancestorContextList[1 - 1], 'foo']
+         *   if currentContext.ancestorContextList[1 - 1] is defined
+         *
+         * {{ ../foo/hoge }}
+         * ↓
+         * [...currentContext.ancestorContextList[1 - 1], 'foo', 'hoge']
+         *   if currentContext.ancestorContextList[1 - 1] is defined
+         *
+         * {{ ../../bar }}
+         * ↓
+         * [...currentContext.ancestorContextList[2 - 1], 'bar']
+         *   if currentContext.ancestorContextList[2 - 1] is defined
+         *
+         * {{ ../../../baz }}
+         * ↓
+         * [...currentContext.ancestorContextList[3 - 1], 'bar']
+         *   if currentContext.ancestorContextList[3 - 1] is defined
+         */
+        const ancestorContext = currentContext.ancestorContextList[astNode.depth - 1];
+        return ancestorContext ? ancestorContext.concat(astNode.parts) : null;
+    }
 
     if (!isSelfPathAST(astNode)) {
         const [firstPart, ...secondParts] = astNode.parts;
@@ -510,12 +534,65 @@ function pathExpressionAST2pathList(
 }
 
 /**
+ * @param currentContext 現在のコンテキスト。作成するコンテキストにとって、直近の親になる
+ * @param newContextPathList 新しいコンテキストを示す`PathList`型
+ * @param blockParams
+ * 以下のテンプレートが指定された場合の、`hoge`や`fuga`に対応する値の配列
+ * ```handlebars
+ * {{#with foo as |hoge fuga|}} ... {{/with}}
+ * ```
+ * @param contextName
+ * 新しいコンテキストに割り当てる別名。これは、`#with`や`#each`のblock parametersで指定された場合に活用する
+ */
+function createChildContext(
+    currentContext: ContextPaths,
+    newContextPathList: PathList,
+    blockParams: string[] | undefined,
+    contextName?: string,
+): ContextPaths {
+    const childContext: ContextPaths = {
+        ...currentContext,
+        /**
+         * `default`を新しいコンテキストで再設定する
+         */
+        default: newContextPathList,
+        /**
+         * 現在のコンテキストを、`ancestorContextList`の*先頭に*挿入する
+         */
+        ancestorContextList: [
+            currentContext.default,
+            ...currentContext.ancestorContextList,
+        ],
+        /**
+         * 引数`blockParams`が定義されている場合は、`ignoreNameSet`を更新する
+         */
+        ...blockParams && blockParams.length > 0
+            ? { ignoreNameSet: mergeSet(currentContext.ignoreNameSet, blockParams) }
+            : {},
+    };
+    return typeof contextName === 'string'
+        ? {
+            ...childContext,
+            /**
+             * 引数`contextName`が定義されている場合は、`aliasNameRecord`に追加する
+             */
+            aliasNameRecord: {
+                ...currentContext.aliasNameRecord,
+                [contextName]: newContextPathList,
+            },
+        }
+        : childContext;
+}
+
+/**
  * 指定された`PathExpression`ASTノードが、相対的な変数名を参照するものであるかを判定する。
  * 具体的には、以下のような変数名の場合に、`true`を返す。
  * ```handlebars
  * {{ this.foo }}
  * {{ this/foo }}
  * {{ ./foo }}
+ * {{ ../foo }}
+ * {{ ../../foo }}
  * ```
  *
  * Note: {@link https://handlebarsjs.com/guide/expressions.html#literal-segments segment-literal notation}を使用した以下のような変数名は、相対的な参照*ではない*はずである。
@@ -531,5 +608,5 @@ function pathExpressionAST2pathList(
  * @returns `true`の場合は、変数が相対的な参照であることを示す
  */
 function isSelfPathAST(pathExpressionASTNode: HandlebarsAST.PathExpression): boolean {
-    return /^(?:this[./]|\.\/)/.test(pathExpressionASTNode.original);
+    return pathExpressionASTNode.depth > 0 || /^(?:this[./]|\.\/)/.test(pathExpressionASTNode.original);
 }

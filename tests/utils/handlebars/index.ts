@@ -29,6 +29,66 @@ describe('getVariableRecord()', () => {
             ],
         ],
         [
+            '{{ ./foo }}',
+            { foo: stringType },
+            [
+                [
+                    { foo: 42 },
+                    `42`,
+                ],
+                [
+                    {
+                        foo: 0,
+                        '.': { foo: 1 },
+                    },
+                    `0`,
+                ],
+                [
+                    {
+                        '.': { foo: 1 },
+                    },
+                    ``,
+                ],
+            ],
+        ],
+        [
+            '{{ ../foo }}',
+            {},
+            [
+                [
+                    { foo: 42 },
+                    ``,
+                ],
+                [
+                    {
+                        foo: 0,
+                        '..': { foo: 1 },
+                    },
+                    ``,
+                ],
+            ],
+        ],
+        [
+            '{{ ../../foo }}',
+            {},
+            [
+                [
+                    { foo: 42 },
+                    ``,
+                ],
+                [
+                    {
+                        foo: 0,
+                        '..': {
+                            foo: 1,
+                            '..': { foo: 2 },
+                        },
+                    },
+                    ``,
+                ],
+            ],
+        ],
+        [
             '{{ this }}',
             { '': stringType },
             [
@@ -80,6 +140,54 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     42,
+                    ``,
+                ],
+            ],
+        ],
+        [
+            '{{ .. }}',
+            {},
+            [
+                [
+                    42,
+                    ``,
+                ],
+                [
+                    { '..': 0 },
+                    ``,
+                ],
+            ],
+        ],
+        [
+            '{{ ../.. }}',
+            {},
+            [
+                [
+                    42,
+                    ``,
+                ],
+                [
+                    {
+                        '..': { '..': 0 },
+                    },
+                    ``,
+                ],
+            ],
+        ],
+        [
+            '{{ ../../.. }}',
+            {},
+            [
+                [
+                    42,
+                    ``,
+                ],
+                [
+                    {
+                        '..': {
+                            '..': { '..': 0 },
+                        },
+                    },
                     ``,
                 ],
             ],
@@ -552,6 +660,30 @@ describe('getVariableRecord()', () => {
                     ],
                 ],
                 [
+                    '<ul> {{#each people}} <li>{{../hoge}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(undefType),
+                        hoge: stringType,
+                    },
+                    [
+                        [
+                            {
+                                people: [42],
+                                hoge: 'HoGe',
+                            },
+                            `<ul>  <li>HoGe</li>  </ul>`,
+                        ],
+                        [
+                            {
+                                people: [
+                                    { hoge: 'HoGe' },
+                                ],
+                            },
+                            `<ul>  <li></li>  </ul>`,
+                        ],
+                    ],
+                ],
+                [
                     '<ul> {{#each people}} <li>{{name}}</li> {{else}} <li class=else>{{defaultName}}</li> {{/each}} </ul>',
                     {
                         people: arrayType(recordType({
@@ -926,6 +1058,73 @@ describe('getVariableRecord()', () => {
                                 default: '[/]',
                             },
                             `  [/foo/*/]  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each hoge}} {{#each fuga}} {{./foo}} {{../bar}} {{../../baz}} {{/each}} {{/each}}',
+                    {
+                        hoge: arrayType(recordType({
+                            fuga: arrayType(recordType({
+                                foo: stringType,
+                            })),
+                            bar: stringType,
+                        })),
+                        baz: stringType,
+                    },
+                    [
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [{ foo: 'Foo' }],
+                                        bar: 'bAR',
+                                    },
+                                ],
+                                baz: 'BaZ',
+                            },
+                            `  Foo bAR BaZ  `,
+                        ],
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [
+                                            {
+                                                foo: '!!!foo',
+                                                bar: '!!!bar',
+                                                baz: '!!!baz',
+                                            },
+                                        ],
+                                        foo: '!!foo',
+                                        bar: '!!bar',
+                                        baz: '!!baz',
+                                    },
+                                ],
+                                foo: '!foo',
+                                bar: '!bar',
+                                baz: '!baz',
+                            },
+                            `  !!!foo !!bar !baz  `,
+                        ],
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [
+                                            {
+                                                bar: '!!!bar',
+                                                baz: '!!!baz',
+                                            },
+                                        ],
+                                        foo: '!!foo',
+                                        baz: '!!baz',
+                                    },
+                                ],
+                                foo: '!foo',
+                                bar: '!bar',
+                            },
+                            `      `,
                         ],
                     ],
                 ],
@@ -1802,6 +2001,207 @@ describe('getVariableRecord()', () => {
                     ],
                 ],
                 [
+                    '{{#each hoge as |foo|}} {{#each fuga as |foo|}} {{./foo}} {{../bar}} {{../../baz}} {{/each}} {{/each}}',
+                    {
+                        hoge: arrayType(recordType({
+                            fuga: arrayType(recordType({
+                                foo: stringType,
+                            })),
+                            bar: stringType,
+                        })),
+                        baz: stringType,
+                    },
+                    [
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [{ foo: 'Foo' }],
+                                        bar: 'bAR',
+                                    },
+                                ],
+                                baz: 'BaZ',
+                            },
+                            `  Foo bAR BaZ  `,
+                        ],
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [
+                                            {
+                                                foo: '!!!foo',
+                                                bar: '!!!bar',
+                                                baz: '!!!baz',
+                                            },
+                                        ],
+                                        foo: '!!foo',
+                                        bar: '!!bar',
+                                        baz: '!!baz',
+                                    },
+                                ],
+                                foo: '!foo',
+                                bar: '!bar',
+                                baz: '!baz',
+                            },
+                            `  !!!foo !!bar !baz  `,
+                        ],
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [
+                                            {
+                                                bar: '!!!bar',
+                                                baz: '!!!baz',
+                                            },
+                                        ],
+                                        foo: '!!foo',
+                                        baz: '!!baz',
+                                    },
+                                ],
+                                foo: '!foo',
+                                bar: '!bar',
+                            },
+                            `      `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each hoge as |bar|}} {{#each fuga as |bar|}} {{./foo}} {{../bar}} {{../../baz}} {{/each}} {{/each}}',
+                    {
+                        hoge: arrayType(recordType({
+                            fuga: arrayType(recordType({
+                                foo: stringType,
+                            })),
+                            bar: stringType,
+                        })),
+                        baz: stringType,
+                    },
+                    [
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [{ foo: 'Foo' }],
+                                        bar: 'bAR',
+                                    },
+                                ],
+                                baz: 'BaZ',
+                            },
+                            `  Foo bAR BaZ  `,
+                        ],
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [
+                                            {
+                                                foo: '!!!foo',
+                                                bar: '!!!bar',
+                                                baz: '!!!baz',
+                                            },
+                                        ],
+                                        foo: '!!foo',
+                                        bar: '!!bar',
+                                        baz: '!!baz',
+                                    },
+                                ],
+                                foo: '!foo',
+                                bar: '!bar',
+                                baz: '!baz',
+                            },
+                            `  !!!foo !!bar !baz  `,
+                        ],
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [
+                                            {
+                                                bar: '!!!bar',
+                                                baz: '!!!baz',
+                                            },
+                                        ],
+                                        foo: '!!foo',
+                                        baz: '!!baz',
+                                    },
+                                ],
+                                foo: '!foo',
+                                bar: '!bar',
+                            },
+                            `      `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each hoge as |baz|}} {{#each fuga as |baz|}} {{./foo}} {{../bar}} {{../../baz}} {{/each}} {{/each}}',
+                    {
+                        hoge: arrayType(recordType({
+                            fuga: arrayType(recordType({
+                                foo: stringType,
+                            })),
+                            bar: stringType,
+                        })),
+                        baz: stringType,
+                    },
+                    [
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [{ foo: 'Foo' }],
+                                        bar: 'bAR',
+                                    },
+                                ],
+                                baz: 'BaZ',
+                            },
+                            `  Foo bAR BaZ  `,
+                        ],
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [
+                                            {
+                                                foo: '!!!foo',
+                                                bar: '!!!bar',
+                                                baz: '!!!baz',
+                                            },
+                                        ],
+                                        foo: '!!foo',
+                                        bar: '!!bar',
+                                        baz: '!!baz',
+                                    },
+                                ],
+                                foo: '!foo',
+                                bar: '!bar',
+                                baz: '!baz',
+                            },
+                            `  !!!foo !!bar !baz  `,
+                        ],
+                        [
+                            {
+                                hoge: [
+                                    {
+                                        fuga: [
+                                            {
+                                                bar: '!!!bar',
+                                                baz: '!!!baz',
+                                            },
+                                        ],
+                                        foo: '!!foo',
+                                        baz: '!!baz',
+                                    },
+                                ],
+                                foo: '!foo',
+                                bar: '!bar',
+                            },
+                            `      `,
+                        ],
+                    ],
+                ],
+                [
                     [
                         `{{#each users as |user|}}`,
                         `  {{#each user.book as |book|}}`,
@@ -2633,6 +3033,51 @@ describe('getVariableRecord()', () => {
                     ],
                 ],
                 [
+                    '{{#with person}} {{../firstname}} {{../lastname}} {{/with}}',
+                    {
+                        person: recordType({}),
+                        firstname: stringType,
+                        lastname: stringType,
+                    },
+                    [
+                        [
+                            {
+                                person: {},
+                                firstname: 'John',
+                                lastname: 'Smith',
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                                firstname: 'John',
+                                lastname: 'Smith',
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            `   `,
+                        ],
+                        [
+                            {
+                                firstname: 'John',
+                                lastname: 'Smith',
+                            },
+                            ``,
+                        ],
+                    ],
+                ],
+                [
                     '{{#with data.person}} {{firstname}} {{lastname}} {{/with}}',
                     {
                         data: recordType({
@@ -2695,6 +3140,49 @@ describe('getVariableRecord()', () => {
                                 },
                             },
                             `  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with data}} {{#with person}} {{firstname}} {{lastname}} / {{../species}} {{../../hoge}} {{/with}} {{/with}}',
+                    {
+                        data: recordType({
+                            person: recordType({
+                                firstname: stringType,
+                                lastname: stringType,
+                            }),
+                            species: stringType,
+                        }),
+                        hoge: stringType,
+                    },
+                    [
+                        [
+                            {
+                                data: {
+                                    person: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                    },
+                                    species: 'Human',
+                                },
+                                hoge: 'HoGe',
+                            },
+                            `  John Smith / Human HoGe  `,
+                        ],
+                        [
+                            {
+                                data: {
+                                    person: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                        hoge: 'fUGa',
+                                        species: 'Smith',
+                                    },
+                                    hoge: 'HoGe',
+                                },
+                                species: 'Unknown',
+                            },
+                            `  John Smith /    `,
                         ],
                     ],
                 ],
@@ -3075,6 +3563,92 @@ describe('getVariableRecord()', () => {
                                 },
                             },
                             `  :    `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with data as |species|}} {{#with person as |species|}} {{firstname}} {{lastname}} / {{../species}} {{../../hoge}} {{/with}} {{/with}}',
+                    {
+                        data: recordType({
+                            person: recordType({
+                                firstname: stringType,
+                                lastname: stringType,
+                            }),
+                            species: stringType,
+                        }),
+                        hoge: stringType,
+                    },
+                    [
+                        [
+                            {
+                                data: {
+                                    person: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                    },
+                                    species: 'Human',
+                                },
+                                hoge: 'HoGe',
+                            },
+                            `  John Smith / Human HoGe  `,
+                        ],
+                        [
+                            {
+                                data: {
+                                    person: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                        hoge: 'fUGa',
+                                        species: 'Smith',
+                                    },
+                                    hoge: 'HoGe',
+                                },
+                                species: 'Unknown',
+                            },
+                            `  John Smith /    `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with data as |hoge|}} {{#with person as |hoge|}} {{firstname}} {{lastname}} / {{../species}} {{../../hoge}} {{/with}} {{/with}}',
+                    {
+                        data: recordType({
+                            person: recordType({
+                                firstname: stringType,
+                                lastname: stringType,
+                            }),
+                            species: stringType,
+                        }),
+                        hoge: stringType,
+                    },
+                    [
+                        [
+                            {
+                                data: {
+                                    person: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                    },
+                                    species: 'Human',
+                                },
+                                hoge: 'HoGe',
+                            },
+                            `  John Smith / Human HoGe  `,
+                        ],
+                        [
+                            {
+                                data: {
+                                    person: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                        hoge: 'fUGa',
+                                        species: 'Smith',
+                                    },
+                                    hoge: 'HoGe',
+                                },
+                                species: 'Unknown',
+                            },
+                            `  John Smith /    `,
                         ],
                     ],
                 ],
