@@ -16,15 +16,73 @@ const undefType = createUndefinedTypeNode();
 const boolType = createBooleanTypeNode();
 
 describe('getVariableRecord()', () => {
-    it.each<[string, TypeNodeRecord]>([
+    describe.each<[string, TypeNodeRecord, Array<[unknown, string | Error]>?]>([
         ['nothing', {}],
         [
             '{{ foo }}',
             { foo: stringType },
+            [
+                [
+                    { foo: 42 },
+                    `42`,
+                ],
+            ],
         ],
         [
             '{{ this }}',
             { '': stringType },
+            [
+                [
+                    42,
+                    `42`,
+                ],
+                [
+                    { this: 42 },
+                    `[object Object]`,
+                ],
+            ],
+        ],
+        [
+            '{{ [this] }}',
+            { this: stringType },
+            [
+                [
+                    { this: 42 },
+                    `42`,
+                ],
+                [
+                    42,
+                    ``,
+                ],
+            ],
+        ],
+        [
+            '{{ . }}',
+            { '': stringType },
+            [
+                [
+                    42,
+                    `42`,
+                ],
+                [
+                    { '.': 42 },
+                    `[object Object]`,
+                ],
+            ],
+        ],
+        [
+            '{{ [.] }}',
+            { '.': stringType },
+            [
+                [
+                    { '.': 42 },
+                    `42`,
+                ],
+                [
+                    42,
+                    ``,
+                ],
+            ],
         ],
         [
             '{{ foo.bar }}',
@@ -45,6 +103,62 @@ describe('getVariableRecord()', () => {
                     }),
                 }),
             },
+        ],
+        [
+            '{{ this.hoge }}',
+            { hoge: stringType },
+            [
+                [
+                    { hoge: 42 },
+                    `42`,
+                ],
+                [
+                    { this: { hoge: 2 }, hoge: 1 },
+                    `1`,
+                ],
+            ],
+        ],
+        [
+            '{{ [this].hoge }}',
+            { this: recordType({ hoge: stringType }) },
+            [
+                [
+                    { this: { hoge: 42 } },
+                    `42`,
+                ],
+                [
+                    { this: { hoge: 2 }, hoge: 1 },
+                    `2`,
+                ],
+            ],
+        ],
+        [
+            '{{ ./hoge }}',
+            { hoge: stringType },
+            [
+                [
+                    { hoge: 42 },
+                    `42`,
+                ],
+                [
+                    { '.': { hoge: 2 }, hoge: 1 },
+                    `1`,
+                ],
+            ],
+        ],
+        [
+            '{{ [.]/hoge }}',
+            { '.': recordType({ hoge: stringType }) },
+            [
+                [
+                    { '.': { hoge: 42 } },
+                    `42`,
+                ],
+                [
+                    { '.': { hoge: 2 }, hoge: 1 },
+                    `2`,
+                ],
+            ],
         ],
         [
             '{{ foo }} {{ bar }}',
@@ -86,8 +200,24 @@ describe('getVariableRecord()', () => {
                 }),
             },
         ],
-    ])('%s', (template, expected) => {
-        expect(getVariableRecord(template)).toStrictEqual(expected);
+    ])('%s', (template, expected, renderTestData) => {
+        it('_', () => {
+            expect(getVariableRecord(template)).toStrictEqual(expected);
+        });
+
+        if (renderTestData) {
+            it.each(
+                renderTestData.map(([data, result], index) =>
+                    [`render test #${String(index + 1).padStart(2, '0')}`, data, result] as const
+                ),
+            )('%s', (_, data, expected) => {
+                if (expected instanceof Error) {
+                    expect(() => hbs.compile(template)(data)).toThrow(expected);
+                } else {
+                    expect(hbs.compile(template)(data)).toBe(expected);
+                }
+            });
+        }
     });
 
     describe('built-in helpers', () => {
@@ -399,6 +529,24 @@ describe('getVariableRecord()', () => {
                         ],
                         [
                             { people: ['hoge'] },
+                            `<ul>  <li></li>  </ul>`,
+                        ],
+                    ],
+                ],
+                [
+                    '<ul> {{#each people}} <li>{{[this]}}</li> {{/each}} </ul>',
+                    {
+                        people: arrayType(recordType({
+                            this: stringType,
+                        })),
+                    },
+                    [
+                        [
+                            { people: [{ this: 42 }] },
+                            `<ul>  <li>42</li>  </ul>`,
+                        ],
+                        [
+                            { people: [54] },
                             `<ul>  <li></li>  </ul>`,
                         ],
                     ],
@@ -868,6 +1016,334 @@ describe('getVariableRecord()', () => {
                                 users: [{ user: 6 }],
                             },
                             ` Name: [object Object] `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each users as |user|}} Name: {{this.user}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            user: stringType,
+                        })),
+                    },
+                    [
+                        [
+                            {
+                                users: [
+                                    { user: 42 },
+                                ],
+                            },
+                            ` Name: 42 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    { user: 1 },
+                                ],
+                            },
+                            ` Name: 1 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {},
+                                ],
+                            },
+                            ` Name:  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each users as |this|}} Name: {{this.user}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            user: stringType,
+                        })),
+                    },
+                    [
+                        [
+                            {
+                                users: [
+                                    { user: 42 },
+                                ],
+                            },
+                            ` Name: 42 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    { user: 1 },
+                                ],
+                            },
+                            ` Name: 1 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {},
+                                ],
+                            },
+                            ` Name:  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each users as |user|}} Name: {{./user}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            user: stringType,
+                        })),
+                    },
+                    [
+                        [
+                            {
+                                users: [
+                                    { user: 42 },
+                                ],
+                            },
+                            ` Name: 42 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    { user: 1 },
+                                ],
+                            },
+                            ` Name: 1 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {},
+                                ],
+                            },
+                            ` Name:  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each users as |.|}} Name: {{./user}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            user: stringType,
+                        })),
+                    },
+                    [
+                        [
+                            {
+                                users: [
+                                    { user: 42 },
+                                ],
+                            },
+                            ` Name: 42 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    { user: 1 },
+                                ],
+                            },
+                            ` Name: 1 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {},
+                                ],
+                            },
+                            ` Name:  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each users as |user|}} Name: {{[this].user}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            this: recordType({
+                                user: stringType,
+                            }),
+                        })),
+                    },
+                    [
+                        [
+                            {
+                                users: [
+                                    {
+                                        this: { user: 42 },
+                                    },
+                                ],
+                            },
+                            ` Name: 42 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {
+                                        user: 1,
+                                        this: { user: 2 },
+                                    },
+                                ],
+                            },
+                            ` Name: 2 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {
+                                        user: 1,
+                                        this: {},
+                                    },
+                                ],
+                            },
+                            ` Name:  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each users as |this|}} Name: {{[this].user}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            this: recordType({
+                                user: stringType,
+                            }),
+                        })),
+                    },
+                    [
+                        [
+                            {
+                                users: [
+                                    {
+                                        this: { user: 42 },
+                                    },
+                                ],
+                            },
+                            ` Name: 42 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {
+                                        user: 1,
+                                        this: { user: 2 },
+                                    },
+                                ],
+                            },
+                            ` Name: 2 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {
+                                        user: 1,
+                                        this: {},
+                                    },
+                                ],
+                            },
+                            ` Name:  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each users as |user|}} Name: {{[.]/user}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            '.': recordType({
+                                user: stringType,
+                            }),
+                        })),
+                    },
+                    [
+                        [
+                            {
+                                users: [
+                                    {
+                                        '.': { user: 42 },
+                                    },
+                                ],
+                            },
+                            ` Name: 42 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {
+                                        user: 1,
+                                        '.': { user: 2 },
+                                    },
+                                ],
+                            },
+                            ` Name: 2 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {
+                                        user: 1,
+                                        '.': {},
+                                    },
+                                ],
+                            },
+                            ` Name:  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#each users as |.|}} Name: {{[.]/user}} {{/each}}',
+                    {
+                        users: arrayType(recordType({
+                            '.': recordType({
+                                user: stringType,
+                            }),
+                        })),
+                    },
+                    [
+                        [
+                            {
+                                users: [
+                                    {
+                                        '.': { user: 42 },
+                                    },
+                                ],
+                            },
+                            ` Name: 42 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {
+                                        user: 1,
+                                        '.': { user: 2 },
+                                    },
+                                ],
+                            },
+                            ` Name: 2 `,
+                        ],
+                        [
+                            {
+                                user: 0,
+                                users: [
+                                    {
+                                        user: 1,
+                                        '.': {},
+                                    },
+                                ],
+                            },
+                            ` Name:  `,
                         ],
                     ],
                 ],

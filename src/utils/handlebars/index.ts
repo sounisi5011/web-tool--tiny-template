@@ -509,13 +509,25 @@ function pathExpressionAST2pathList(
 }
 
 /**
- * @returns
- * `true`の場合は、指定された変数が`this`から開始する以下のような変数
+ * 指定された`PathExpression`ASTノードが、相対的な変数名を参照するものであるかを判定する。
+ * 具体的には、以下のような変数名の場合に、`true`を返す。
  * ```handlebars
  * {{ this.foo }}
  * {{ this/foo }}
  * {{ ./foo }}
  * ```
+ *
+ * Note: {@link https://handlebarsjs.com/guide/expressions.html#literal-segments segment-literal notation}を使用した以下のような変数名は、相対的な参照*ではない*はずである。
+ * ```handlebars
+ * {{ [this].foo }}
+ * {{ [this]/foo }}
+ * {{ [.].foo }}
+ * {{ [.]/foo }}
+ * ```
+ * しかし、`handlebars@4.7.7`は、これを相対的な参照の変数名として処理する。
+ * おそらくHandlebarsのバグだと思われるが、実際の動作に合わせるため、意図的に修正は行わない。
+ *
+ * @returns `true`の場合は、変数が相対的な参照であることを示す
  */
 function isSelfPathAST(pathExpressionASTNode: HandlebarsAST.PathExpression): boolean {
     return /^(?:this[./]|\.\/)/.test(pathExpressionASTNode.original);
