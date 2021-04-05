@@ -1,12 +1,12 @@
 <script lang="ts">
   import 'codemirror/mode/xml/xml';
-  import Mustache from 'mustache';
 
   import './codemirror-mode/mustache';
   import type { EventMap } from './components/CodeMirror.svelte';
   import CodeMirror from './components/CodeMirror.svelte';
   import VariableInput from './components/VariableInput.svelte';
   import { triggerEnter, downloadFile, pickFile } from './utils/dom';
+  import Handlebars from './utils/handlebars/browser';
   import { getVariableNameList } from './utils/mustache';
   import { validateVariableRecord } from './utils/variable-data';
 
@@ -17,22 +17,21 @@
     duplicate: boolean;
   };
   type VariablesList = ReadonlyArray<VariableData>;
+  type Variables = Record<string, string>;
 
-  function variablesList2variablesObj(
-    variablesList: VariablesList,
-  ): Record<string, string> {
+  function variablesList2variablesObj(variablesList: VariablesList): Variables {
     return Object.fromEntries(
       variablesList.map(({ name, value }) => [name, value ?? '']),
     );
   }
 
   function render(
-    template: string,
+    template: typeof compiledTemplate,
     variablesList: VariablesList,
   ): string | null {
     const variables = variablesList2variablesObj(variablesList);
     try {
-      return Mustache.render(template, variables);
+      return template(variables);
     } catch (e) {
       console.error(e);
       return null;
@@ -100,8 +99,11 @@
     }
   }
 
+  let compiledTemplate: Handlebars.TemplateDelegate<Variables>;
+  $: compiledTemplate = Handlebars.compile(templateText);
+
   let outputHTMLText: ReturnType<typeof render>;
-  $: outputHTMLText = render(templateText, variablesList);
+  $: outputHTMLText = render(compiledTemplate, variablesList);
 
   const handleImportVariables = () => {
     pickFile({ accept: '.json' }, (file) => {
