@@ -1,5 +1,6 @@
 import hbs from 'handlebars';
 
+import { isSingleTuple, mergeSet } from '..';
 import type * as HandlebarsAST from './ast';
 import { isMatchType } from './ast';
 import type { TypeNode, TypeNodeRecord } from './node';
@@ -82,6 +83,8 @@ function assignAST2node(
             assignIfBlockAST2node(astNode, nodeStream, currentContext);
         } else if (blockHelperName === 'each') {
             assignEachBlockAST2node(astNode, nodeStream, currentContext);
+        } else if (blockHelperName === 'with') {
+            assignWithBlockAST2node(astNode, nodeStream, currentContext);
         }
     }
     return nodeStream.node;
@@ -342,6 +345,70 @@ function assignEachBlockAST2node(
          */
         assignAST2node(astNode.program, nodeStream, childContext);
     }
+
+    /**
+     * `else`ブロックの内容を解析する
+     */
+    if (astNode.inverse) {
+        assignAST2node(astNode.inverse, nodeStream, currentContext);
+    }
+}
+
+/**
+ * Handlebarsの{@link https://handlebarsjs.com/guide/builtin-helpers.html#with ビルトイン・ブロック・ヘルパー`#with`}を示す`BlockStatement`ASTノードの解析結果を`NodeStream`に代入する
+ */
+function assignWithBlockAST2node(
+    astNode: HandlebarsAST.BlockStatement,
+    nodeStream: NodeStream,
+    currentContext: ContextPaths,
+): void {
+    if (!isSingleTuple(astNode.params)) return;
+    /**
+     * 以下のテンプレートが指定された場合の、`foo`に対応する値
+     * ```handlebars
+     * {{#with foo}} ... {{/with}}
+     * ```
+     */
+    const contextPathList = pathExpressionAST2pathList(astNode.params[0], currentContext);
+    if (!contextPathList) return;
+
+    /**
+     * 以下のテンプレートが指定された場合の、`hoge`や`fuga`に対応する値の配列
+     * ```handlebars
+     * {{#with foo as |hoge fuga|}} ... {{/with}}
+     * ```
+     */
+    const blockParams = astNode.program.blockParams as (typeof astNode.program.blockParams | undefined);
+    /**
+     * 以下のテンプレートが指定された場合の、`hoge`に対応する値
+     * ```handlebars
+     * {{#with foo as |hoge|}} ... {{/with}}
+     * ```
+     */
+    const contextName = blockParams?.[0];
+
+    nodeStream.add(contextPathList, 'record');
+
+    const childContext: ContextPaths = {
+        ...currentContext,
+        default: contextPathList,
+        ...blockParams && blockParams.length > 0
+            ? { ignoreNameSet: mergeSet(currentContext.ignoreNameSet, blockParams) }
+            : {},
+    };
+    assignAST2node(
+        astNode.program,
+        nodeStream,
+        typeof contextName === 'string'
+            ? {
+                ...childContext,
+                aliasNameRecord: {
+                    ...currentContext.aliasNameRecord,
+                    [contextName]: contextPathList,
+                },
+            }
+            : childContext,
+    );
 
     /**
      * `else`ブロックの内容を解析する

@@ -1779,5 +1779,790 @@ describe('getVariableRecord()', () => {
                 }
             });
         });
+        /**
+         * @see https://handlebarsjs.com/guide/builtin-helpers.html#with
+         */
+        describe('#with', () => {
+            describe.each<[string | string[], TypeNodeRecord, Array<[unknown, string | string[] | Error]>?]>([
+                [
+                    '{{#with person}} nothing {{/with}}',
+                    {
+                        person: recordType({}),
+                    },
+                ],
+                [
+                    '{{#with person}} {{firstname}} {{lastname}} {{/with}}',
+                    {
+                        person: recordType({
+                            firstname: stringType,
+                            lastname: stringType,
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                firstname: 'Foo',
+                                lastname: 'Bar',
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                firstname: 'Foo',
+                                lastname: 'Bar',
+                                person: {},
+                            },
+                            `   `,
+                        ],
+                        [
+                            {
+                                firstname: 'Foo',
+                                lastname: 'Bar',
+                            },
+                            ``,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person}} {{this.firstname}} {{this.lastname}} {{/with}}',
+                    {
+                        person: recordType({
+                            firstname: stringType,
+                            lastname: stringType,
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    this: {
+                                        firstname: 'Hoge',
+                                        lastname: 'Fuga',
+                                    },
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                                this: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    this: {
+                                        firstname: 'Hoge',
+                                        lastname: 'Fuga',
+                                    },
+                                },
+                                this: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            `   `,
+                        ],
+                        [
+                            {
+                                person: {},
+                                this: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            `   `,
+                        ],
+                        [
+                            {
+                                this: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            ``,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person}} {{this/firstname}} {{this/lastname}} {{/with}}',
+                    {
+                        person: recordType({
+                            firstname: stringType,
+                            lastname: stringType,
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    this: {
+                                        firstname: 'Hoge',
+                                        lastname: 'Fuga',
+                                    },
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                                this: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    this: {
+                                        firstname: 'Hoge',
+                                        lastname: 'Fuga',
+                                    },
+                                },
+                                this: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            `   `,
+                        ],
+                        [
+                            {
+                                person: {},
+                                this: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            `   `,
+                        ],
+                        [
+                            {
+                                this: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            ``,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person}} {{./firstname}} {{./lastname}} {{/with}}',
+                    {
+                        person: recordType({
+                            firstname: stringType,
+                            lastname: stringType,
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    '.': {
+                                        firstname: 'Hoge',
+                                        lastname: 'Fuga',
+                                    },
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                                '.': {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    '.': {
+                                        firstname: 'Hoge',
+                                        lastname: 'Fuga',
+                                    },
+                                },
+                                '.': {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            `   `,
+                        ],
+                        [
+                            {
+                                person: {},
+                                '.': {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            `   `,
+                        ],
+                        [
+                            {
+                                '.': {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            ``,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person}} {{person.firstname}} {{person.lastname}} {{/with}}',
+                    {
+                        person: recordType({
+                            person: recordType({
+                                firstname: stringType,
+                                lastname: stringType,
+                            }),
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    person: {
+                                        firstname: 'Bar',
+                                        lastname: 'Foo',
+                                    },
+                                },
+                            },
+                            ` Bar Foo `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    person: {
+                                        firstname: 'Bar',
+                                        lastname: 'Foo',
+                                    },
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            ` Bar Foo `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            `   `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with data.person}} {{firstname}} {{lastname}} {{/with}}',
+                    {
+                        data: recordType({
+                            person: recordType({
+                                firstname: stringType,
+                                lastname: stringType,
+                            }),
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                data: {
+                                    person: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                    },
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                data: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            ``,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with data}} {{#with person}} {{firstname}} {{lastname}} {{/with}} {{/with}}',
+                    {
+                        data: recordType({
+                            person: recordType({
+                                firstname: stringType,
+                                lastname: stringType,
+                            }),
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                data: {
+                                    person: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                    },
+                                },
+                            },
+                            `  John Smith  `,
+                        ],
+                        [
+                            {
+                                data: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            `  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person}} {{firstname}} {{lastname}} {{else}} {{defaultName}} {{/with}}',
+                    {
+                        person: recordType({
+                            firstname: stringType,
+                            lastname: stringType,
+                        }),
+                        defaultName: stringType,
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                                defaultName: 'Anonymous',
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                defaultName: 'Anonymous',
+                            },
+                            ` Anonymous `,
+                        ],
+                        [
+                            {
+                                person: {},
+                                defaultName: 'Anonymous',
+                            },
+                            `   `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    defaultName: 'Anonymous#02',
+                                },
+                                defaultName: 'Anonymous#01',
+                            },
+                            `   `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person this_param_is_invalid}} {{firstname}} {{lastname}} {{/with}}',
+                    {},
+                    [
+                        [
+                            {},
+                            new Error('#with requires exactly one argument'),
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with}} {{firstname}} {{lastname}} {{/with}}',
+                    {},
+                    [
+                        [
+                            {},
+                            new Error('#with requires exactly one argument'),
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person as |person|}} {{person.firstname}} {{splitChar}} {{person.lastname}} {{/with}}',
+                    {
+                        person: recordType({
+                            firstname: stringType,
+                            lastname: stringType,
+                            splitChar: stringType,
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                    splitChar: '-/-',
+                                },
+                            },
+                            ` John -/- Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    person: {
+                                        firstname: 'Bar',
+                                        lastname: 'Foo',
+                                    },
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                    splitChar: '-/-',
+                                },
+                                splitChar: ':split:',
+                            },
+                            ` John -/- Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                                splitChar: ':split:',
+                            },
+                            ` John  Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    person: {
+                                        firstname: 'Bar',
+                                        lastname: 'Foo',
+                                    },
+                                },
+                                splitChar: ':split:',
+                            },
+                            `    `,
+                        ],
+                        [
+                            {},
+                            ``,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person as |p|}} {{person.firstname}} {{person.lastname}} {{/with}}',
+                    {
+                        person: recordType({
+                            person: recordType({
+                                firstname: stringType,
+                                lastname: stringType,
+                            }),
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    person: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                    },
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    firstname: 'Foo',
+                                    lastname: 'Bar',
+                                    person: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                    },
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    firstname: 'Foo',
+                                    lastname: 'Bar',
+                                },
+                            },
+                            `   `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person as |person this_param_is_invalid|}} {{person.firstname}} {{person.lastname}} {{/with}}',
+                    {
+                        person: recordType({
+                            firstname: stringType,
+                            lastname: stringType,
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            ` John Smith `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person as |person p1 p2 p3|}} {{person.firstname}} {{person.lastname}} / {{p1}},{{p2}},{{p3}},{{p4}} {{/with}}',
+                    {
+                        person: recordType({
+                            firstname: stringType,
+                            lastname: stringType,
+                            p4: stringType,
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                    p1: '[1]',
+                                    p2: '[2]',
+                                    p3: '[3]',
+                                    p4: '[4]',
+                                },
+                            },
+                            ` John Smith / ,,,[4] `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                    p1: '[1]',
+                                    p2: '[2]',
+                                    p3: '[3]',
+                                    p4: '[4]',
+                                },
+                                p1: '(1)',
+                                p2: '(2)',
+                                p3: '(3)',
+                                p4: '(4)',
+                            },
+                            ` John Smith / ,,,[4] `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                                p1: '(1)',
+                                p2: '(2)',
+                                p3: '(3)',
+                                p4: '(4)',
+                            },
+                            ` John Smith / ,,, `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person as |p|}} {{#with p.name}} {{firstname}} {{lastname}} {{/with}} {{/with}}',
+                    {
+                        person: recordType({
+                            name: recordType({
+                                firstname: stringType,
+                                lastname: stringType,
+                            }),
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    name: {
+                                        firstname: 'John',
+                                        lastname: 'Smith',
+                                    },
+                                },
+                            },
+                            `  John Smith  `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    firstname: 'Bar',
+                                    lastname: 'Foo',
+                                },
+                            },
+                            `  `,
+                        ],
+                        [
+                            {
+                                firstname: 'Bar',
+                                lastname: 'Foo',
+                            },
+                            ``,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with person as |person|}} {{#with person.data}} {{person.firstname}} {{person.lastname}} {{/with}} {{/with}}',
+                    {
+                        person: recordType({
+                            firstname: stringType,
+                            lastname: stringType,
+                            data: recordType({}),
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                    data: {},
+                                },
+                            },
+                            `  John Smith  `,
+                        ],
+                        [
+                            {
+                                person: {
+                                    firstname: 'John',
+                                    lastname: 'Smith',
+                                },
+                            },
+                            `  `,
+                        ],
+                    ],
+                ],
+                [
+                    '{{#with city as |city|}} {{#with city.location as |loc|}} {{city.name}}: {{loc.north}} {{loc.east}} {{/with}} {{/with}}',
+                    {
+                        city: recordType({
+                            name: stringType,
+                            location: recordType({
+                                north: stringType,
+                                east: stringType,
+                            }),
+                        }),
+                    },
+                    [
+                        [
+                            {
+                                city: {
+                                    name: 'San Francisco',
+                                    location: {
+                                        north: '37.73,',
+                                        east: -122.44,
+                                    },
+                                },
+                            },
+                            `  San Francisco: 37.73, -122.44  `,
+                        ],
+                        [
+                            {
+                                city: {
+                                    name: 'San Francisco',
+                                    location: {
+                                        city: {
+                                            name: '<INVALID>',
+                                        },
+                                        north: '37.73,',
+                                        east: -122.44,
+                                    },
+                                    loc: {
+                                        north: NaN,
+                                        east: -NaN,
+                                    },
+                                },
+                            },
+                            `  San Francisco: 37.73, -122.44  `,
+                        ],
+                        [
+                            {
+                                city: {
+                                    location: {
+                                        city: {
+                                            name: '<INVALID>',
+                                        },
+                                    },
+                                    loc: {
+                                        north: NaN,
+                                        east: -NaN,
+                                    },
+                                },
+                            },
+                            `  :    `,
+                        ],
+                    ],
+                ],
+            ])('%s', (templateData, expected, renderTestData) => {
+                const template: string = Array.isArray(templateData) ? templateData.join('\n') : templateData;
+
+                it('_', () => {
+                    expect(getVariableRecord(template)).toStrictEqual(expected);
+                });
+
+                if (renderTestData) {
+                    it.each(
+                        renderTestData.map(([data, result], index) =>
+                            [`render test #${String(index + 1).padStart(2, '0')}`, data, result] as const
+                        ),
+                    )('%s', (_, data, expected) => {
+                        if (expected instanceof Error) {
+                            expect(() => hbs.compile(template)(data)).toThrow(expected);
+                        } else {
+                            expect(hbs.compile(template)(data))
+                                .toBe(Array.isArray(expected) ? expected.join('\n') : expected);
+                        }
+                    });
+                }
+            });
+        });
     });
 });
