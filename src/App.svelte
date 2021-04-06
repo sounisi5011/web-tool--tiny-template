@@ -6,8 +6,8 @@
   import CodeMirror from './components/CodeMirror.svelte';
   import VariableInput from './components/VariableInput.svelte';
   import { triggerEnter, downloadFile, pickFile } from './utils/dom';
+  import { getVariableRecord } from './utils/handlebars';
   import Handlebars from './utils/handlebars/browser';
-  import { getVariableNameList } from './utils/mustache';
   import { validateVariableRecord } from './utils/variable-data';
 
   type VariableData = {
@@ -84,7 +84,11 @@
   let definedVariableNameSet: Set<string>;
   $: {
     try {
-      definedVariableNameSet = new Set(getVariableNameList(templateText));
+      definedVariableNameSet = new Set(
+        Object.keys(getVariableRecord(templateText)).filter(
+          (prop) => prop !== '',
+        ),
+      );
       const removedVariablesList = removeEmptyVariables();
       variablesList = findDuplicateVariables([
         ...removedVariablesList,
@@ -252,7 +256,7 @@
     </div>
     <p class="input-template-help">
       テンプレートの言語は
-      <a href="http://mustache.github.io/" target="_blank">Mustache</a>
+      <a href="https://handlebarsjs.com/" target="_blank">Handlebars</a>
       です。
     </p>
   </div>
