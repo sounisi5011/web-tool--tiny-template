@@ -1,6 +1,6 @@
 import hbs from 'handlebars';
 
-import { getVariableRecord } from '../../../src/utils/handlebars';
+import { getVariableTypeStructure } from '../../../src/utils/handlebars';
 import {
     createArrayTypeNode as arrayType,
     createBooleanTypeNode,
@@ -8,19 +8,22 @@ import {
     createStringTypeNode,
     createUndefinedTypeNode,
     createUnionTypeNode as unionType,
-    TypeNodeRecord,
+    TypeNode,
 } from '../../../src/utils/handlebars/node';
 
 const stringType = createStringTypeNode();
 const undefType = createUndefinedTypeNode();
 const boolType = createBooleanTypeNode();
 
-describe('getVariableRecord()', () => {
-    describe.each<[string, TypeNodeRecord, Array<[unknown, string | Error]>?]>([
-        ['nothing', {}],
+describe('getVariableTypeStructure()', () => {
+    describe.each<[string, TypeNode, Array<[unknown, string | Error]>?]>([
+        [
+            'nothing',
+            undefType,
+        ],
         [
             '{{ foo }}',
-            { foo: stringType },
+            recordType({ foo: stringType }),
             [
                 [
                     { foo: 42 },
@@ -30,7 +33,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ ./foo }}',
-            { foo: stringType },
+            recordType({ foo: stringType }),
             [
                 [
                     { foo: 42 },
@@ -53,7 +56,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ ../foo }}',
-            {},
+            undefType,
             [
                 [
                     { foo: 42 },
@@ -70,7 +73,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ ../../foo }}',
-            {},
+            undefType,
             [
                 [
                     { foo: 42 },
@@ -90,7 +93,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ this }}',
-            { '': stringType },
+            stringType,
             [
                 [
                     42,
@@ -104,7 +107,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ [this] }}',
-            { this: stringType },
+            recordType({ this: stringType }),
             [
                 [
                     { this: 42 },
@@ -118,7 +121,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ . }}',
-            { '': stringType },
+            stringType,
             [
                 [
                     42,
@@ -132,7 +135,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ [.] }}',
-            { '.': stringType },
+            recordType({ '.': stringType }),
             [
                 [
                     { '.': 42 },
@@ -146,7 +149,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ .. }}',
-            {},
+            undefType,
             [
                 [
                     42,
@@ -160,7 +163,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ ../.. }}',
-            {},
+            undefType,
             [
                 [
                     42,
@@ -176,7 +179,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ ../../.. }}',
-            {},
+            undefType,
             [
                 [
                     42,
@@ -194,15 +197,15 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ foo.bar }}',
-            {
+            recordType({
                 foo: recordType({
                     bar: stringType,
                 }),
-            },
+            }),
         ],
         [
             '{{ foo.bar.baz.qux }}',
-            {
+            recordType({
                 foo: recordType({
                     bar: recordType({
                         baz: recordType({
@@ -210,11 +213,11 @@ describe('getVariableRecord()', () => {
                         }),
                     }),
                 }),
-            },
+            }),
         ],
         [
             '{{ this.hoge }}',
-            { hoge: stringType },
+            recordType({ hoge: stringType }),
             [
                 [
                     { hoge: 42 },
@@ -228,7 +231,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ [this].hoge }}',
-            { this: recordType({ hoge: stringType }) },
+            recordType({ this: recordType({ hoge: stringType }) }),
             [
                 [
                     { this: { hoge: 42 } },
@@ -242,7 +245,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ ./hoge }}',
-            { hoge: stringType },
+            recordType({ hoge: stringType }),
             [
                 [
                     { hoge: 42 },
@@ -256,7 +259,7 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ [.]/hoge }}',
-            { '.': recordType({ hoge: stringType }) },
+            recordType({ '.': recordType({ hoge: stringType }) }),
             [
                 [
                     { '.': { hoge: 42 } },
@@ -270,34 +273,43 @@ describe('getVariableRecord()', () => {
         ],
         [
             '{{ foo }} {{ bar }}',
-            {
+            recordType({
                 foo: stringType,
                 bar: stringType,
-            },
+            }),
+        ],
+        [
+            '{{ foo }} {{ this }}',
+            unionType([
+                recordType({
+                    foo: stringType,
+                }),
+                stringType,
+            ]),
         ],
         [
             '{{ foo.hoge }} {{ foo.fuga }}',
-            {
+            recordType({
                 foo: recordType({
                     hoge: stringType,
                     fuga: stringType,
                 }),
-            },
+            }),
         ],
         [
             '{{ foo.hoge.あ }} {{ foo.hoge.い }}',
-            {
+            recordType({
                 foo: recordType({
                     hoge: recordType({
                         あ: stringType,
                         い: stringType,
                     }),
                 }),
-            },
+            }),
         ],
         [
             '{{ foo.bar.baz }} {{ foo.bar }}',
-            {
+            recordType({
                 foo: recordType({
                     bar: unionType([
                         recordType({
@@ -306,11 +318,11 @@ describe('getVariableRecord()', () => {
                         stringType,
                     ]),
                 }),
-            },
+            }),
         ],
     ])('%s', (template, expected, renderTestData) => {
         it('_', () => {
-            expect(getVariableRecord(template)).toStrictEqual(expected);
+            expect(getVariableTypeStructure(template)).toStrictEqual(expected);
         });
 
         if (renderTestData) {
@@ -333,229 +345,229 @@ describe('getVariableRecord()', () => {
          * @see https://handlebarsjs.com/guide/builtin-helpers.html#if
          */
         describe('#if', () => {
-            it.each<[string | string[], TypeNodeRecord]>([
+            it.each<[string | string[], TypeNode]>([
                 [
                     `{{#if author}} nothing {{/if}}`,
-                    {
+                    recordType({
                         author: boolType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if data.author}} nothing {{/if}}`,
-                    {
+                    recordType({
                         data: recordType({
                             author: boolType,
                         }),
-                    },
+                    }),
                 ],
                 [
                     `{{#if author}} {{firstName}} {{lastName}} {{/if}}`,
-                    {
+                    recordType({
                         author: boolType,
                         firstName: stringType,
                         lastName: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if author}} {{author}} {{/if}}`,
-                    {
+                    recordType({
                         author: unionType([
                             boolType,
                             stringType,
                         ]),
-                    },
+                    }),
                 ],
                 [
                     `{{#if null}} {{author}} {{/if}}`,
-                    {
+                    recordType({
                         author: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if undefined}} {{author}} {{/if}}`,
-                    {
+                    recordType({
                         author: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if true}} {{author}} {{/if}}`,
-                    {
+                    recordType({
                         author: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if false}} {{author}} {{/if}}`,
-                    {
+                    recordType({
                         author: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if 0}} {{author}} {{/if}}`,
-                    {
+                    recordType({
                         author: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if 42}} {{author}} {{/if}}`,
-                    {
+                    recordType({
                         author: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if ''}} {{author}} {{/if}}`,
-                    {
+                    recordType({
                         author: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if 'str'}} {{author}} {{/if}}`,
-                    {
+                    recordType({
                         author: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if author}} {{name}} {{#if hasBirthday}} {{birthday}} {{/if}} {{/if}}`,
-                    {
+                    recordType({
                         author: boolType,
                         name: stringType,
                         hasBirthday: boolType,
                         birthday: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if author}} nothing {{else}} nothing {{/if}}`,
-                    {
+                    recordType({
                         author: boolType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if author}} nothing {{else}} {{defaultName}} {{/if}}`,
-                    {
+                    recordType({
                         author: boolType,
                         defaultName: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if author}} {{firstName}} {{lastName}} {{else}} {{defaultName}} {{/if}}`,
-                    {
+                    recordType({
                         author: boolType,
                         firstName: stringType,
                         lastName: stringType,
                         defaultName: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if author}} {{firstName}} {{lastName}} {{else}} {{author}} {{/if}}`,
-                    {
+                    recordType({
                         author: unionType([
                             boolType,
                             stringType,
                         ]),
                         firstName: stringType,
                         lastName: stringType,
-                    },
+                    }),
                 ],
                 /**
                  * @see https://handlebarsjs.com/guide/block-helpers.html#conditionals
                  */
                 [
                     `{{#if isActive}} nothing {{else if isInactive}} nothing {{/if}}`,
-                    {
+                    recordType({
                         isActive: boolType,
                         isInactive: boolType,
-                    },
+                    }),
                 ],
                 [
                     `{{#if isActive}} {{foo}} {{else if isInactive}} {{bar}} {{else}} {{baz}} {{/if}}`,
-                    {
+                    recordType({
                         isActive: boolType,
                         foo: stringType,
                         isInactive: boolType,
                         bar: stringType,
                         baz: stringType,
-                    },
+                    }),
                 ],
             ])('%s', (templateData, expected) => {
                 const template: string = Array.isArray(templateData) ? templateData.join('\n') : templateData;
-                expect(getVariableRecord(template)).toStrictEqual(expected);
+                expect(getVariableTypeStructure(template)).toStrictEqual(expected);
             });
         });
         /**
          * @see https://handlebarsjs.com/guide/builtin-helpers.html#unless
          */
         describe('#unless', () => {
-            it.each<[string | string[], TypeNodeRecord]>([
+            it.each<[string | string[], TypeNode]>([
                 [
                     `{{#unless author}} nothing {{/unless}}`,
-                    {
+                    recordType({
                         author: boolType,
-                    },
+                    }),
                 ],
                 [
                     `{{#unless author}} {{firstName}} {{lastName}} {{/unless}}`,
-                    {
+                    recordType({
                         author: boolType,
                         firstName: stringType,
                         lastName: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#unless author}} {{author}} {{/unless}}`,
-                    {
+                    recordType({
                         author: unionType([
                             boolType,
                             stringType,
                         ]),
-                    },
+                    }),
                 ],
                 [
                     `{{#unless author}} nothing {{else}} nothing {{/unless}}`,
-                    {
+                    recordType({
                         author: boolType,
-                    },
+                    }),
                 ],
                 [
                     `{{#unless author}} nothing {{else}} {{defaultName}} {{/unless}}`,
-                    {
+                    recordType({
                         author: boolType,
                         defaultName: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#unless author}} {{firstName}} {{lastName}} {{else}} {{defaultName}} {{/unless}}`,
-                    {
+                    recordType({
                         author: boolType,
                         firstName: stringType,
                         lastName: stringType,
                         defaultName: stringType,
-                    },
+                    }),
                 ],
                 [
                     `{{#unless author}} {{firstName}} {{lastName}} {{else}} {{author}} {{/unless}}`,
-                    {
+                    recordType({
                         author: unionType([
                             boolType,
                             stringType,
                         ]),
                         firstName: stringType,
                         lastName: stringType,
-                    },
+                    }),
                 ],
             ])('%s', (templateData, expected) => {
                 const template: string = Array.isArray(templateData) ? templateData.join('\n') : templateData;
-                expect(getVariableRecord(template)).toStrictEqual(expected);
+                expect(getVariableTypeStructure(template)).toStrictEqual(expected);
             });
         });
         /**
          * @see https://handlebarsjs.com/guide/builtin-helpers.html#each
          */
         describe('#each', () => {
-            describe.each<[string | string[], TypeNodeRecord, Array<[unknown, string | string[] | Error]>?]>([
+            describe.each<[string | string[], TypeNode, Array<[unknown, string | string[] | Error]>?]>([
                 [
                     '<ul> {{#each people}} nothing {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(undefType),
-                    },
+                    }),
                     [
                         [
                             { people: [null] },
@@ -569,9 +581,9 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{this}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(stringType),
-                    },
+                    }),
                     [
                         [
                             { people: [42, 'foo'] },
@@ -585,13 +597,13 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each data.people.list}} <li>{{this}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         data: recordType({
                             people: recordType({
                                 list: arrayType(stringType),
                             }),
                         }),
-                    },
+                    }),
                     [
                         [
                             { data: { people: { list: [42, 'foo'] } } },
@@ -601,9 +613,9 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li data-index="{{@index}}" data-key="{{@key}}">{{this}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(stringType),
-                    },
+                    }),
                     [
                         [
                             {
@@ -625,11 +637,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             { people: [{ name: 'hoge' }] },
@@ -643,11 +655,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{[this]}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             this: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             { people: [{ this: 42 }] },
@@ -661,10 +673,10 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{../hoge}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(undefType),
                         hoge: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -685,12 +697,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}}</li> {{else}} <li class=else>{{defaultName}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                         })),
                         defaultName: stringType,
-                    },
+                    }),
                     [
                         [
                             { people: [{ name: 'hoge', defaultName: '[!!!]' }], defaultName: '[!]' },
@@ -712,7 +724,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each data.people.list}} <li>{{name}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         data: recordType({
                             people: recordType({
                                 list: arrayType(recordType({
@@ -720,7 +732,7 @@ describe('getVariableRecord()', () => {
                                 })),
                             }),
                         }),
-                    },
+                    }),
                     [
                         [
                             { data: { people: { list: [{ name: 'hoge' }] } } },
@@ -730,12 +742,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this.desc}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                             desc: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
@@ -749,12 +761,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this/desc}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                             desc: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
@@ -768,12 +780,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this.this.desc}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                             desc: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
@@ -795,12 +807,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this/this/desc}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                             desc: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
@@ -822,12 +834,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this.this/desc}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                             desc: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
@@ -849,12 +861,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this/this.desc}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                             desc: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
@@ -876,12 +888,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this.this/this.desc}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                             desc: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
@@ -903,12 +915,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} / {{this/this.this/desc}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                             desc: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             { people: [{ name: 'hoge', desc: 'bla bla bla' }] },
@@ -930,11 +942,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li data-index="{{@index}}" data-key="{{@key}}">{{name}}</li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(recordType({
                             name: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -956,14 +968,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<ul> {{#each people}} <li>{{name}} <pre>{{this}}</pre></li> {{/each}} </ul>',
-                    {
+                    recordType({
                         people: arrayType(unionType([
                             stringType,
                             recordType({
                                 name: stringType,
                             }),
                         ])),
-                    },
+                    }),
                     [
                         [
                             {
@@ -985,12 +997,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '<dl> {{#each data}} <dt>{{title}}</dt> <dd>{{desc}}</dd> {{/each}} </dl>',
-                    {
+                    recordType({
                         data: arrayType(recordType({
                             title: stringType,
                             desc: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1004,7 +1016,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each foo this_param_is_invalid}} {{hoge}} {{/each}}',
-                    {},
+                    undefType,
                     [
                         [
                             {},
@@ -1014,7 +1026,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each}} {{hoge}} {{/each}}',
-                    {},
+                    undefType,
                     [
                         [
                             {},
@@ -1024,14 +1036,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each foo}} {{#each bar}} {{hoge}} {{else}} {{default}} {{/each}} {{/each}}',
-                    {
+                    recordType({
                         foo: arrayType(recordType({
                             bar: arrayType(recordType({
                                 hoge: stringType,
                             })),
                             default: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1063,7 +1075,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each hoge}} {{#each fuga}} {{./foo}} {{../bar}} {{../../baz}} {{/each}} {{/each}}',
-                    {
+                    recordType({
                         hoge: arrayType(recordType({
                             fuga: arrayType(recordType({
                                 foo: stringType,
@@ -1071,7 +1083,7 @@ describe('getVariableRecord()', () => {
                             bar: stringType,
                         })),
                         baz: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -1133,9 +1145,9 @@ describe('getVariableRecord()', () => {
                  */
                 [
                     '{{#each users as |user userId|}} Id: {{userId}} Name: {{user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(stringType),
-                    },
+                    }),
                     [
                         [
                             { users: [42], userId: -1 },
@@ -1149,17 +1161,17 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} nothing {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(undefType),
-                    },
+                    }),
                 ],
                 [
                     '{{#each users as |user|}} {{hoge}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             hoge: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1206,9 +1218,9 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Name: {{user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(stringType),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1226,11 +1238,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Name: {{this.user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             user: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1262,11 +1274,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |this|}} Name: {{this.user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             user: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1298,11 +1310,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Name: {{./user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             user: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1334,11 +1346,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |.|}} Name: {{./user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             user: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1370,13 +1382,13 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Name: {{[this].user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             this: recordType({
                                 user: stringType,
                             }),
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1416,13 +1428,13 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |this|}} Name: {{[this].user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             this: recordType({
                                 user: stringType,
                             }),
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1462,13 +1474,13 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Name: {{[.]/user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             '.': recordType({
                                 user: stringType,
                             }),
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1508,13 +1520,13 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |.|}} Name: {{[.]/user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             '.': recordType({
                                 user: stringType,
                             }),
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1554,10 +1566,10 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Name: {{user}} {{else}} {{default}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(stringType),
                         default: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -1584,9 +1596,9 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Name: {{this}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(stringType),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1604,14 +1616,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Name: {{user}} {{hoge}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(unionType([
                             stringType,
                             recordType({
                                 hoge: stringType,
                             }),
                         ])),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1638,14 +1650,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Name: {{this}} {{hoge}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(unionType([
                             stringType,
                             recordType({
                                 hoge: stringType,
                             }),
                         ])),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1672,11 +1684,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user userId|}} Id: {{userId}} Name: {{user.name}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             name: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1694,11 +1706,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Id: {{user.id}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1716,11 +1728,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Id: {{this.id}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1738,12 +1750,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Id: {{user.id}} {{hoge}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                             hoge: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1770,12 +1782,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Id: {{this.id}} {{hoge}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                             hoge: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1802,14 +1814,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Id: {{this.id}} Name: {{user}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(unionType([
                             stringType,
                             recordType({
                                 id: stringType,
                             }),
                         ])),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1831,7 +1843,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Id: {{this.id}} Name: {{user}} {{hoge}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(unionType([
                             stringType,
                             recordType({
@@ -1839,7 +1851,7 @@ describe('getVariableRecord()', () => {
                                 hoge: stringType,
                             }),
                         ])),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1872,12 +1884,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Id: {{this.id}} Name: {{user.name}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                             name: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1899,13 +1911,13 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user|}} Id: {{this.id}} Name: {{user.name}} {{hoge}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                             name: stringType,
                             hoge: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1929,11 +1941,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user userId this_param_is_invalid|}} Id: {{userId}} Name: {{user.name}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             name: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -1947,12 +1959,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each users as |user userId p1 p2 p3|}} Id: {{userId}} Name: {{user.name}} / {{p1}},{{p2}},{{p3}},{{p4}} {{/each}}',
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             name: stringType,
                             p4: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2002,7 +2014,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each hoge as |foo|}} {{#each fuga as |foo|}} {{./foo}} {{../bar}} {{../../baz}} {{/each}} {{/each}}',
-                    {
+                    recordType({
                         hoge: arrayType(recordType({
                             fuga: arrayType(recordType({
                                 foo: stringType,
@@ -2010,7 +2022,7 @@ describe('getVariableRecord()', () => {
                             bar: stringType,
                         })),
                         baz: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -2069,7 +2081,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each hoge as |bar|}} {{#each fuga as |bar|}} {{./foo}} {{../bar}} {{../../baz}} {{/each}} {{/each}}',
-                    {
+                    recordType({
                         hoge: arrayType(recordType({
                             fuga: arrayType(recordType({
                                 foo: stringType,
@@ -2077,7 +2089,7 @@ describe('getVariableRecord()', () => {
                             bar: stringType,
                         })),
                         baz: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -2136,7 +2148,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#each hoge as |baz|}} {{#each fuga as |baz|}} {{./foo}} {{../bar}} {{../../baz}} {{/each}} {{/each}}',
-                    {
+                    recordType({
                         hoge: arrayType(recordType({
                             fuga: arrayType(recordType({
                                 foo: stringType,
@@ -2144,7 +2156,7 @@ describe('getVariableRecord()', () => {
                             bar: stringType,
                         })),
                         baz: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -2209,14 +2221,14 @@ describe('getVariableRecord()', () => {
                         `  {{/each}}`,
                         `{{/each}}`,
                     ],
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                             book: arrayType(recordType({
                                 id: stringType,
                             })),
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2260,7 +2272,7 @@ describe('getVariableRecord()', () => {
                         `  {{/each}}`,
                         `{{/each}}`,
                     ],
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                             book: arrayType(recordType({
@@ -2268,7 +2280,7 @@ describe('getVariableRecord()', () => {
                             })),
                             errorMsg: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2358,7 +2370,7 @@ describe('getVariableRecord()', () => {
                         `  {{/each}}`,
                         `{{/each}}`,
                     ],
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                             book: arrayType(recordType({
@@ -2366,7 +2378,7 @@ describe('getVariableRecord()', () => {
                             })),
                             errorMsg: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2456,7 +2468,7 @@ describe('getVariableRecord()', () => {
                         `  {{/each}}`,
                         `{{/each}}`,
                     ],
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                             book: arrayType(recordType({
@@ -2464,7 +2476,7 @@ describe('getVariableRecord()', () => {
                             })),
                             errorMsg: stringType,
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2552,14 +2564,14 @@ describe('getVariableRecord()', () => {
                         `  {{/each}}`,
                         `{{/each}}`,
                     ],
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                             book: arrayType(recordType({
                                 id: stringType,
                             })),
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2601,14 +2613,14 @@ describe('getVariableRecord()', () => {
                         `  {{/each}}`,
                         `{{/each}}`,
                     ],
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             id: stringType,
                             book: arrayType(recordType({
                                 id: stringType,
                             })),
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2650,7 +2662,7 @@ describe('getVariableRecord()', () => {
                         `  {{/each}}`,
                         `{{/each}}`,
                     ],
-                    {
+                    recordType({
                         users: arrayType(recordType({
                             book: arrayType(recordType({
                                 user: recordType({
@@ -2659,7 +2671,7 @@ describe('getVariableRecord()', () => {
                                 id: stringType,
                             })),
                         })),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2697,7 +2709,7 @@ describe('getVariableRecord()', () => {
                 const template: string = Array.isArray(templateData) ? templateData.join('\n') : templateData;
 
                 it('_', () => {
-                    expect(getVariableRecord(template)).toStrictEqual(expected);
+                    expect(getVariableTypeStructure(template)).toStrictEqual(expected);
                 });
 
                 if (renderTestData) {
@@ -2720,21 +2732,21 @@ describe('getVariableRecord()', () => {
          * @see https://handlebarsjs.com/guide/builtin-helpers.html#with
          */
         describe('#with', () => {
-            describe.each<[string | string[], TypeNodeRecord, Array<[unknown, string | string[] | Error]>?]>([
+            describe.each<[string | string[], TypeNode, Array<[unknown, string | string[] | Error]>?]>([
                 [
                     '{{#with person}} nothing {{/with}}',
-                    {
+                    recordType({
                         person: recordType({}),
-                    },
+                    }),
                 ],
                 [
                     '{{#with person}} {{firstname}} {{lastname}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             firstname: stringType,
                             lastname: stringType,
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2775,12 +2787,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person}} {{this.firstname}} {{this.lastname}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             firstname: stringType,
                             lastname: stringType,
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2846,12 +2858,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person}} {{this/firstname}} {{this/lastname}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             firstname: stringType,
                             lastname: stringType,
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2917,12 +2929,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person}} {{./firstname}} {{./lastname}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             firstname: stringType,
                             lastname: stringType,
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -2988,14 +3000,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person}} {{person.firstname}} {{person.lastname}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             person: recordType({
                                 firstname: stringType,
                                 lastname: stringType,
                             }),
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3034,11 +3046,11 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person}} {{../firstname}} {{../lastname}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({}),
                         firstname: stringType,
                         lastname: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -3079,14 +3091,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with data.person}} {{firstname}} {{lastname}} {{/with}}',
-                    {
+                    recordType({
                         data: recordType({
                             person: recordType({
                                 firstname: stringType,
                                 lastname: stringType,
                             }),
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3112,14 +3124,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with data}} {{#with person}} {{firstname}} {{lastname}} {{/with}} {{/with}}',
-                    {
+                    recordType({
                         data: recordType({
                             person: recordType({
                                 firstname: stringType,
                                 lastname: stringType,
                             }),
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3145,7 +3157,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with data}} {{#with person}} {{firstname}} {{lastname}} / {{../species}} {{../../hoge}} {{/with}} {{/with}}',
-                    {
+                    recordType({
                         data: recordType({
                             person: recordType({
                                 firstname: stringType,
@@ -3154,7 +3166,7 @@ describe('getVariableRecord()', () => {
                             species: stringType,
                         }),
                         hoge: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -3188,13 +3200,13 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person}} {{firstname}} {{lastname}} {{else}} {{defaultName}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             firstname: stringType,
                             lastname: stringType,
                         }),
                         defaultName: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -3232,7 +3244,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person this_param_is_invalid}} {{firstname}} {{lastname}} {{/with}}',
-                    {},
+                    undefType,
                     [
                         [
                             {},
@@ -3242,7 +3254,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with}} {{firstname}} {{lastname}} {{/with}}',
-                    {},
+                    undefType,
                     [
                         [
                             {},
@@ -3252,13 +3264,13 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person as |person|}} {{person.firstname}} {{splitChar}} {{person.lastname}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             firstname: stringType,
                             lastname: stringType,
                             splitChar: stringType,
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3315,14 +3327,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person as |p|}} {{person.firstname}} {{person.lastname}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             person: recordType({
                                 firstname: stringType,
                                 lastname: stringType,
                             }),
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3361,12 +3373,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person as |person this_param_is_invalid|}} {{person.firstname}} {{person.lastname}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             firstname: stringType,
                             lastname: stringType,
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3381,13 +3393,13 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person as |person p1 p2 p3|}} {{person.firstname}} {{person.lastname}} / {{p1}},{{p2}},{{p3}},{{p4}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             firstname: stringType,
                             lastname: stringType,
                             p4: stringType,
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3436,14 +3448,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person as |p|}} {{#with p.name}} {{firstname}} {{lastname}} {{/with}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             name: recordType({
                                 firstname: stringType,
                                 lastname: stringType,
                             }),
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3476,13 +3488,13 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with person as |person|}} {{#with person.data}} {{person.firstname}} {{person.lastname}} {{/with}} {{/with}}',
-                    {
+                    recordType({
                         person: recordType({
                             firstname: stringType,
                             lastname: stringType,
                             data: recordType({}),
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3507,7 +3519,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with city as |city|}} {{#with city.location as |loc|}} {{city.name}}: {{loc.north}} {{loc.east}} {{/with}} {{/with}}',
-                    {
+                    recordType({
                         city: recordType({
                             name: stringType,
                             location: recordType({
@@ -3515,7 +3527,7 @@ describe('getVariableRecord()', () => {
                                 east: stringType,
                             }),
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3568,7 +3580,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with data as |species|}} {{#with person as |species|}} {{firstname}} {{lastname}} / {{../species}} {{../../hoge}} {{/with}} {{/with}}',
-                    {
+                    recordType({
                         data: recordType({
                             person: recordType({
                                 firstname: stringType,
@@ -3577,7 +3589,7 @@ describe('getVariableRecord()', () => {
                             species: stringType,
                         }),
                         hoge: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -3611,7 +3623,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     '{{#with data as |hoge|}} {{#with person as |hoge|}} {{firstname}} {{lastname}} / {{../species}} {{../../hoge}} {{/with}} {{/with}}',
-                    {
+                    recordType({
                         data: recordType({
                             person: recordType({
                                 firstname: stringType,
@@ -3620,7 +3632,7 @@ describe('getVariableRecord()', () => {
                             species: stringType,
                         }),
                         hoge: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -3656,7 +3668,7 @@ describe('getVariableRecord()', () => {
                 const template: string = Array.isArray(templateData) ? templateData.join('\n') : templateData;
 
                 it('_', () => {
-                    expect(getVariableRecord(template)).toStrictEqual(expected);
+                    expect(getVariableTypeStructure(template)).toStrictEqual(expected);
                 });
 
                 if (renderTestData) {
@@ -3682,10 +3694,10 @@ describe('getVariableRecord()', () => {
          * @see https://handlebarsjs.com/api-reference/data-variables.html#root
          */
         describe('@root', () => {
-            describe.each<[string, TypeNodeRecord, Array<[unknown, string | string[] | Error]>?]>([
+            describe.each<[string, TypeNode, Array<[unknown, string | string[] | Error]>?]>([
                 [
                     `{{@root}}`,
-                    { '': stringType },
+                    stringType,
                     [
                         [
                             42,
@@ -3695,7 +3707,7 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     `{{@root.foo}}`,
-                    { foo: stringType },
+                    recordType({ foo: stringType }),
                     [
                         [
                             { foo: 42 },
@@ -3705,10 +3717,10 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     `{{#each array}} {{@root.foo}} {{/each}}`,
-                    {
+                    recordType({
                         array: arrayType(undefType),
                         foo: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -3747,12 +3759,12 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     `{{#each array}} {{@root.foo.bar}} {{/each}}`,
-                    {
+                    recordType({
                         array: arrayType(undefType),
                         foo: recordType({
                             bar: stringType,
                         }),
-                    },
+                    }),
                     [
                         [
                             {
@@ -3801,14 +3813,14 @@ describe('getVariableRecord()', () => {
                 ],
                 [
                     `{{@root.foo}} {{#with data}} {{@root.bar}} {{#each list}} {{@root.baz}} {{/each}} {{/with}}`,
-                    {
+                    recordType({
                         foo: stringType,
                         data: recordType({
                             list: arrayType(undefType),
                         }),
                         bar: stringType,
                         baz: stringType,
-                    },
+                    }),
                     [
                         [
                             {
@@ -3825,7 +3837,7 @@ describe('getVariableRecord()', () => {
                 ],
             ])('%s', (template, expected, renderTestData) => {
                 it('_', () => {
-                    expect(getVariableRecord(template)).toStrictEqual(expected);
+                    expect(getVariableTypeStructure(template)).toStrictEqual(expected);
                 });
 
                 if (renderTestData) {
@@ -3847,7 +3859,7 @@ describe('getVariableRecord()', () => {
     });
 
     describe('multi syntax', () => {
-        const table: Array<[string | string[], TypeNodeRecord]> = [
+        const table: Array<[string | string[], TypeNode]> = [
             /**
              * @see https://handlebarsjs.com/guide/expressions.html#changing-the-context
              */
@@ -3857,12 +3869,12 @@ describe('getVariableRecord()', () => {
                     `  {{../prefix}} {{firstname}}`,
                     `{{/each}}`,
                 ],
-                {
+                recordType({
                     people: arrayType(recordType({
                         firstname: stringType,
                     })),
                     prefix: stringType,
-                },
+                }),
             ],
             [
                 [
@@ -3873,12 +3885,12 @@ describe('getVariableRecord()', () => {
                     `  {{/if}}`,
                     `{{/each}}`,
                 ],
-                {
+                recordType({
                     comments: arrayType(recordType({
                         title: boolType,
                     })),
                     permalink: stringType,
-                },
+                }),
             ],
             /**
              * @see https://handlebarsjs.com/guide/expressions.html#html-escaping
@@ -3888,9 +3900,9 @@ describe('getVariableRecord()', () => {
                     `raw: {{{specialChars}}}`,
                     `html-escaped: {{specialChars}}`,
                 ],
-                {
+                recordType({
                     specialChars: stringType,
-                },
+                }),
             ],
             /**
              * @see https://handlebarsjs.com/guide/expressions.html#subexpressions
@@ -3907,13 +3919,13 @@ describe('getVariableRecord()', () => {
                     `  </a>`,
                     `{{~/each}}`,
                 ],
-                {
+                recordType({
                     nav: arrayType(recordType({
                         url: stringType,
                         test: boolType,
                         title: stringType,
                     })),
-                },
+                }),
             ],
             /**
              * @see https://handlebarsjs.com/guide/expressions.html#escaping-handlebars-expressions
@@ -3925,7 +3937,7 @@ describe('getVariableRecord()', () => {
                     `  {{escaped}}`,
                     `{{{{/raw}}}}`,
                 ],
-                {},
+                undefType,
             ],
             /**
              * @see https://handlebarsjs.com/guide/block-helpers.html#the-with-helper
@@ -3940,13 +3952,13 @@ describe('getVariableRecord()', () => {
                     `  {{/with}}`,
                     `</div>`,
                 ],
-                {
+                recordType({
                     title: stringType,
                     story: recordType({
                         intro: stringType,
                         body: stringType,
                     }),
-                },
+                }),
             ],
             /**
              * @see https://handlebarsjs.com/guide/block-helpers.html#simple-iterators
@@ -3969,7 +3981,7 @@ describe('getVariableRecord()', () => {
                     `  {{/each}}`,
                     `</div>`,
                 ],
-                {
+                recordType({
                     title: stringType,
                     story: recordType({
                         intro: stringType,
@@ -3979,7 +3991,7 @@ describe('getVariableRecord()', () => {
                         subject: stringType,
                         body: stringType,
                     })),
-                },
+                }),
             ],
         ];
         it.each(
@@ -3990,7 +4002,7 @@ describe('getVariableRecord()', () => {
                 ] as const
             ),
         )('%s', (template, expected) => {
-            expect(getVariableRecord(template)).toStrictEqual(expected);
+            expect(getVariableTypeStructure(template)).toStrictEqual(expected);
         });
     });
 });

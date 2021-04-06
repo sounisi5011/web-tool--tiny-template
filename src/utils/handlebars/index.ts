@@ -2,7 +2,7 @@ import { isSingleTuple, mergeSet } from '..';
 import hbs from '../../handlebars';
 import type * as HandlebarsAST from './ast';
 import { isMatchType } from './ast';
-import type { TypeNode, TypeNodeRecord } from './node';
+import type { TypeNode } from './node';
 import { NodeStream, PathList } from './node/stream';
 
 interface ContextPaths {
@@ -17,7 +17,7 @@ interface ContextPaths {
     readonly ignoreNameSet?: ReadonlySet<string>;
 }
 
-export function getVariableRecord(template: string): TypeNodeRecord {
+export function getVariableTypeStructure(template: string): TypeNode {
     const nodeStream = new NodeStream();
     const ast = hbs.parse(template);
     const node = assignAST2node(ast, nodeStream, {
@@ -25,14 +25,7 @@ export function getVariableRecord(template: string): TypeNodeRecord {
         ancestorContextList: [],
         aliasNameRecord: {},
     });
-
-    if (node.type === 'record') {
-        return node.children;
-    } else if (node.type === 'undefined') {
-        return {};
-    } else {
-        return { '': node };
-    }
+    return node;
 }
 
 /**

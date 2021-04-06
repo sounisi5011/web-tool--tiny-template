@@ -7,7 +7,8 @@
   import VariableInput from './components/VariableInput.svelte';
   import Handlebars from './handlebars';
   import { triggerEnter, downloadFile, pickFile } from './utils/dom';
-  import { getVariableRecord } from './utils/handlebars';
+  import { getVariableTypeStructure } from './utils/handlebars';
+  import { getTypeNodeByTypeName } from './utils/handlebars/node';
   import { validateVariableRecord } from './utils/variable-data';
 
   type VariableData = {
@@ -84,11 +85,10 @@
   let definedVariableNameSet: Set<string>;
   $: {
     try {
-      definedVariableNameSet = new Set(
-        Object.keys(getVariableRecord(templateText)).filter(
-          (prop) => prop !== '',
-        ),
-      );
+      const typeStructure = getVariableTypeStructure(templateText);
+      const variableRecord = getTypeNodeByTypeName(typeStructure, 'record')
+        ?.children;
+      definedVariableNameSet = new Set(Object.keys(variableRecord ?? {}));
       const removedVariablesList = removeEmptyVariables();
       variablesList = findDuplicateVariables([
         ...removedVariablesList,
