@@ -1,7 +1,7 @@
 <script lang="ts">
   import 'codemirror/mode/xml/xml';
+  import 'codemirror/mode/handlebars/handlebars';
 
-  import './codemirror-mode/mustache';
   import type { EventMap } from './components/CodeMirror.svelte';
   import CodeMirror from './components/CodeMirror.svelte';
   import VariableInput from './components/VariableInput.svelte';
@@ -247,7 +247,7 @@
     </div>
     <div class="input-template-area">
       <CodeMirror
-        mode="mustache"
+        mode="handlebars"
         bind:value={templateText}
         placeholder="テンプレートを入力"
         lineWrapping
