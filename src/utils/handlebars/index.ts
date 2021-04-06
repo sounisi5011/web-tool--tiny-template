@@ -1,7 +1,7 @@
 import { isSingleTuple, mergeSet } from '..';
+import hbs from '../../handlebars';
 import type * as HandlebarsAST from './ast';
 import { isMatchType } from './ast';
-import hbs from './browser';
 import type { TypeNode, TypeNodeRecord } from './node';
 import { NodeStream, PathList } from './node/stream';
 

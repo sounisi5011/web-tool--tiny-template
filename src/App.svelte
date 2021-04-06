@@ -5,9 +5,9 @@
   import type { EventMap } from './components/CodeMirror.svelte';
   import CodeMirror from './components/CodeMirror.svelte';
   import VariableInput from './components/VariableInput.svelte';
+  import Handlebars from './handlebars';
   import { triggerEnter, downloadFile, pickFile } from './utils/dom';
   import { getVariableRecord } from './utils/handlebars';
-  import Handlebars from './utils/handlebars/browser';
   import { validateVariableRecord } from './utils/variable-data';
 
   type VariableData = {
