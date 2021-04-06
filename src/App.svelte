@@ -5,7 +5,12 @@
   import type { EventMap } from './components/CodeMirror.svelte';
   import CodeMirror from './components/CodeMirror.svelte';
   import VariableInput from './components/VariableInput.svelte';
+  import {
+    templateText as defaultTemplateText,
+    variablesRecord as defaultVariablesRecord,
+  } from './data/default';
   import Handlebars from './handlebars';
+  import { objectEntries } from './utils';
   import { triggerEnter, downloadFile, pickFile } from './utils/dom';
   import { getVariableTypeStructure } from './utils/handlebars';
   import { getTypeNodeByTypeName } from './utils/handlebars/node';
@@ -65,21 +70,13 @@
     });
   }
 
-  let variablesList: VariablesList = findDuplicateVariables([
-    { name: 'title', value: 'ゲト博士' },
-    { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
-  ]);
-  let templateText = `<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{{ title }}</title>
-  </head>
-  <body>
-    <main>{{ せつめい }}</main>
-  </body>
-</html>`;
+  let variablesList: VariablesList = findDuplicateVariables(
+    objectEntries(defaultVariablesRecord).map(([name, value]) => ({
+      name,
+      value,
+    })),
+  );
+  let templateText: string = defaultTemplateText;
   let newVariableName = '';
 
   let definedVariableNameSet: Set<string>;
