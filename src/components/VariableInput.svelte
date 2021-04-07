@@ -18,7 +18,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
 
-  import { objectEntries, isObject } from '../utils';
+  import { objectEntries, isObject, isNotNullish } from '../utils';
   import type { TypeNode } from '../utils/handlebars/node';
   import { getTypeNodeByTypeName } from '../utils/handlebars/node';
   import LabelInputArea from './LabelInputArea.svelte';
@@ -26,6 +26,38 @@
   export let typeStructure: TypeNode | undefined;
   export let value: unknown;
   export let label = '';
+
+  function normalizeValue(currentValue: unknown, type: TypeNode): Value {
+    if (type.type === 'union') {
+      const targetType =
+        type.children.record ||
+        type.children.array ||
+        type.children.string ||
+        type.children.boolean;
+      return targetType ? normalizeValue(currentValue, targetType) : '';
+    } else if (type.type === 'record') {
+      const record: Extract<Value, Record<string, unknown>> = {};
+      if (isObject(currentValue) && !Array.isArray(currentValue)) {
+        for (const [prop, valueType] of objectEntries(type.children)) {
+          const value = normalizeValue(currentValue[prop], valueType);
+          if (value !== null) record[prop] = value;
+        }
+      }
+      return record;
+    } else if (type.type === 'array') {
+      if (!Array.isArray(currentValue)) return [];
+      return currentValue
+        .map((itemValue) => normalizeValue(itemValue, type.children))
+        .filter(isNotNullish);
+    } else if (type.type === 'boolean') {
+      return Boolean(currentValue);
+    } else if (type.type === 'string') {
+      if (typeof currentValue === 'string') return currentValue;
+      if (typeof currentValue === 'number' || currentValue === true)
+        return String(currentValue);
+    }
+    return '';
+  }
 
   function getObjValue(
     currentValue: unknown,
@@ -47,11 +79,15 @@
   const dispatch = createEventDispatcher<EventMap>();
 
   let internalValue: Value | undefined;
-  $: if (internalValue !== undefined)
-    dispatch('input', { value: internalValue });
+  $: if (typeStructure) internalValue = normalizeValue(value, typeStructure);
+
+  const handleInput = (value: Value) => {
+    dispatch('input', { value: value });
+  };
 
   const handleInputValue = (event: CustomEventMap['input']) => {
     internalValue = event.detail.value;
+    handleInput(internalValue);
   };
 
   const handleInputObjValue = (prop: string) => (
@@ -64,6 +100,7 @@
       [prop]: event.detail.value,
     };
     internalValue = newValue;
+    handleInput(internalValue);
   };
 
   const handleInputArrayValue = (index: number) => (
@@ -72,22 +109,26 @@
     const newValue = [...(Array.isArray(internalValue) ? internalValue : [])];
     newValue[index] = event.detail.value;
     internalValue = newValue;
+    handleInput(internalValue);
   };
 
-  const handleAddArrayItem = () => {
+  const handleAddArrayItem = (itemType: TypeNode) => () => {
     const newValue = [
       ...(Array.isArray(internalValue) ? internalValue : []),
-      0,
+      normalizeValue('', itemType),
     ];
     internalValue = newValue;
+    handleInput(internalValue);
   };
 
   const handleInputBoolean = (event: { currentTarget: HTMLInputElement }) => {
     internalValue = event.currentTarget.checked;
+    handleInput(internalValue);
   };
 
   const handleInputString = (event: { currentTarget: HTMLTextAreaElement }) => {
     internalValue = event.currentTarget.value;
+    handleInput(internalValue);
   };
 </script>
 
@@ -154,7 +195,11 @@
         {/each}
       {/if}
       <li>
-        <input type="button" value="追加" on:click={handleAddArrayItem} />
+        <input
+          type="button"
+          value="追加"
+          on:click={handleAddArrayItem(typeStructure.children)}
+        />
       </li>
     </ul>
   {:else}

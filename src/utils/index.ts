@@ -1,3 +1,7 @@
+export function isNotNullish<T>(value: T): value is Exclude<T, null | undefined> {
+    return value !== null && value !== undefined;
+}
+
 export function isObject(value: unknown): value is Record<PropertyKey, unknown> {
     return typeof value === 'object' && value !== null;
 }
