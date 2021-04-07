@@ -116,6 +116,11 @@
       currentValue.map((v, i) => (index === i ? event.detail.value : v)),
     );
 
+  const handleRemoveArrayItem = (
+    currentValue: readonly Value[],
+    index: number,
+  ) => () => handleInput(currentValue.filter((_, i) => index !== i));
+
   const handleAddArrayItem = (
     currentValue: readonly Value[],
     itemType: TypeNode,
@@ -150,6 +155,11 @@
           typeStructure={currentValueState.itemType}
           value={itemValue}
           on:input={handleInputArrayValue(currentValueState.value, index)}
+        />
+        <input
+          type="button"
+          value="削除"
+          on:click={handleRemoveArrayItem(currentValueState.value, index)}
         />
       </li>
     {/each}
