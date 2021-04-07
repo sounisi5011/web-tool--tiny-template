@@ -81,8 +81,9 @@
   let internalValue: Value | undefined;
   $: internalValue = normalizeValue(value, typeStructure);
 
-  const handleInput = (value: Value) => {
-    dispatch('input', { value: value });
+  const handleInput = (newValue: Value) => {
+    dispatch('input', { value: newValue });
+    value = newValue;
   };
 
   const handleInputValue = (event: CustomEventMap['input']) => {

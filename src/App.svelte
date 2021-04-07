@@ -4,7 +4,6 @@
 
   import type { EventMap } from './components/CodeMirror.svelte';
   import CodeMirror from './components/CodeMirror.svelte';
-  import type { CustomEventMap } from './components/VariableInput.svelte';
   import VariableInput from './components/VariableInput.svelte';
   import {
     templateText as defaultTemplateText,
@@ -45,9 +44,6 @@
   let outputHTMLText: ReturnType<typeof render>;
   $: outputHTMLText = render(compiledTemplate, variablesContext);
 
-  const handleInputVariables = (event: CustomEventMap['input']) => {
-    variablesContext = event.detail.value;
-  };
   const handleImportVariables = () => {
     pickFile({ accept: '.json' }, (file) => {
       const reader = new FileReader();
@@ -113,8 +109,7 @@
         {#if variableTypeStructure}
           <VariableInput
             typeStructure={variableTypeStructure}
-            value={variablesContext}
-            on:input={handleInputVariables}
+            bind:value={variablesContext}
           />
         {/if}
       </div>
