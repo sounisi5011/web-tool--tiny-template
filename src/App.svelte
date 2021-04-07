@@ -110,11 +110,13 @@
   <div class="input-area">
     <div class="input-variables-area">
       <div class="variables-input-area">
-        <VariableInput
-          typeStructure={variableTypeStructure}
-          value={variablesContext}
-          on:input={handleInputVariables}
-        />
+        {#if variableTypeStructure}
+          <VariableInput
+            typeStructure={variableTypeStructure}
+            value={variablesContext}
+            on:input={handleInputVariables}
+          />
+        {/if}
       </div>
       <p class="variables-import-export-area">
         <input

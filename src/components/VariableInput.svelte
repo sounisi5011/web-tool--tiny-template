@@ -23,7 +23,7 @@
   import { getTypeNodeByTypeName } from '../utils/handlebars/node';
   import LabelInputArea from './LabelInputArea.svelte';
 
-  export let typeStructure: TypeNode | undefined;
+  export let typeStructure: TypeNode;
   export let value: unknown;
   export let label = '';
 
@@ -79,7 +79,7 @@
   const dispatch = createEventDispatcher<EventMap>();
 
   let internalValue: Value | undefined;
-  $: if (typeStructure) internalValue = normalizeValue(value, typeStructure);
+  $: internalValue = normalizeValue(value, typeStructure);
 
   const handleInput = (value: Value) => {
     dispatch('input', { value: value });
@@ -132,92 +132,90 @@
   };
 </script>
 
-{#if typeStructure}
-  {#if typeStructure.type === 'union'}
-    {#if typeStructure.children.record}
-      <svelte:self
-        typeStructure={typeStructure.children.record}
-        value={value}
-        on:input={handleInputValue}
-      />
-    {:else if typeStructure.children.array}
-      <svelte:self
-        typeStructure={typeStructure.children.array}
-        value={value}
-        on:input={handleInputValue}
-      />
-    {:else if typeStructure.children.string}
-      <svelte:self
-        typeStructure={typeStructure.children.string}
-        value={value}
-        on:input={handleInputValue}
-        label={label}
-      />
-    {:else if typeStructure.children.boolean}
-      <svelte:self
-        typeStructure={typeStructure.children.boolean}
-        value={value}
-        on:input={handleInputValue}
-        label={label}
-      />
-    {/if}
-  {:else if typeStructure.type === 'record'}
-    {#each objectEntries(typeStructure.children) as [prop, valueType]}
-      {#if getTypeNodeByTypeName(valueType, 'record') || getTypeNodeByTypeName(valueType, 'array')}
-        <details open>
-          <summary>{prop}</summary>
-          <svelte:self
-            typeStructure={valueType}
-            value={getObjValue(value, prop)}
-            on:input={handleInputObjValue(prop)}
-          />
-        </details>
-      {:else}
+{#if typeStructure.type === 'union'}
+  {#if typeStructure.children.record}
+    <svelte:self
+      typeStructure={typeStructure.children.record}
+      value={value}
+      on:input={handleInputValue}
+    />
+  {:else if typeStructure.children.array}
+    <svelte:self
+      typeStructure={typeStructure.children.array}
+      value={value}
+      on:input={handleInputValue}
+    />
+  {:else if typeStructure.children.string}
+    <svelte:self
+      typeStructure={typeStructure.children.string}
+      value={value}
+      on:input={handleInputValue}
+      label={label}
+    />
+  {:else if typeStructure.children.boolean}
+    <svelte:self
+      typeStructure={typeStructure.children.boolean}
+      value={value}
+      on:input={handleInputValue}
+      label={label}
+    />
+  {/if}
+{:else if typeStructure.type === 'record'}
+  {#each objectEntries(typeStructure.children) as [prop, valueType]}
+    {#if getTypeNodeByTypeName(valueType, 'record') || getTypeNodeByTypeName(valueType, 'array')}
+      <details open>
+        <summary>{prop}</summary>
         <svelte:self
           typeStructure={valueType}
-          label={prop}
           value={getObjValue(value, prop)}
           on:input={handleInputObjValue(prop)}
         />
-      {/if}
-    {/each}
-  {:else if typeStructure.type === 'array'}
-    <ul>
-      {#if Array.isArray(value)}
-        {#each value as itemValue, index}
-          <li>
-            <svelte:self
-              typeStructure={typeStructure.children}
-              value={itemValue}
-              on:input={handleInputArrayValue(index)}
-            />
-          </li>
-        {/each}
-      {/if}
-      <li>
-        <input
-          type="button"
-          value="追加"
-          on:click={handleAddArrayItem(typeStructure.children)}
-        />
-      </li>
-    </ul>
-  {:else}
-    <p>
-      <LabelInputArea>
-        <span slot="labelText" class="labelText">{label}</span>
-        {#if typeStructure.type === 'boolean'}
-          <input
-            type="checkbox"
-            checked={Boolean(value)}
-            on:change={handleInputBoolean}
+      </details>
+    {:else}
+      <svelte:self
+        typeStructure={valueType}
+        label={prop}
+        value={getObjValue(value, prop)}
+        on:input={handleInputObjValue(prop)}
+      />
+    {/if}
+  {/each}
+{:else if typeStructure.type === 'array'}
+  <ul>
+    {#if Array.isArray(value)}
+      {#each value as itemValue, index}
+        <li>
+          <svelte:self
+            typeStructure={typeStructure.children}
+            value={itemValue}
+            on:input={handleInputArrayValue(index)}
           />
-        {:else}
-          <textarea value={getStrValue(value)} on:input={handleInputString} />
-        {/if}
-      </LabelInputArea>
-    </p>
-  {/if}
+        </li>
+      {/each}
+    {/if}
+    <li>
+      <input
+        type="button"
+        value="追加"
+        on:click={handleAddArrayItem(typeStructure.children)}
+      />
+    </li>
+  </ul>
+{:else}
+  <p>
+    <LabelInputArea>
+      <span slot="labelText" class="labelText">{label}</span>
+      {#if typeStructure.type === 'boolean'}
+        <input
+          type="checkbox"
+          checked={Boolean(value)}
+          on:change={handleInputBoolean}
+        />
+      {:else}
+        <textarea value={getStrValue(value)} on:input={handleInputString} />
+      {/if}
+    </LabelInputArea>
+  </p>
 {/if}
 
 <style>
