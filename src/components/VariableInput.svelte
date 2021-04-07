@@ -78,30 +78,27 @@
 
   const dispatch = createEventDispatcher<EventMap>();
 
-  let internalValue: Value | undefined;
+  let internalValue: Value;
   $: internalValue = normalizeValue(value, typeStructure);
 
   const handleInput = (newValue: Value) => {
     dispatch('input', { value: newValue });
+    internalValue = newValue;
     value = newValue;
   };
 
-  const handleInputValue = (event: CustomEventMap['input']) => {
-    internalValue = event.detail.value;
-    handleInput(internalValue);
-  };
+  const handleInputValue = (event: CustomEventMap['input']) =>
+    handleInput(event.detail.value);
 
   const handleInputObjValue = (prop: string) => (
     event: CustomEventMap['input'],
   ) => {
-    const newValue = {
-      ...(typeof internalValue === 'object' && !Array.isArray(internalValue)
-        ? internalValue
-        : {}),
-      [prop]: event.detail.value,
-    };
-    internalValue = newValue;
-    handleInput(internalValue);
+    if (typeof internalValue === 'object' && !Array.isArray(internalValue)) {
+      handleInput({
+        ...internalValue,
+        [prop]: event.detail.value,
+      });
+    }
   };
 
   const handleInputArrayValue = (index: number) => (
@@ -109,27 +106,13 @@
   ) => {
     const newValue = [...(Array.isArray(internalValue) ? internalValue : [])];
     newValue[index] = event.detail.value;
-    internalValue = newValue;
-    handleInput(internalValue);
+    handleInput(newValue);
   };
 
   const handleAddArrayItem = (itemType: TypeNode) => () => {
-    const newValue = [
-      ...(Array.isArray(internalValue) ? internalValue : []),
-      normalizeValue('', itemType),
-    ];
-    internalValue = newValue;
-    handleInput(internalValue);
-  };
-
-  const handleInputBoolean = (event: { currentTarget: HTMLInputElement }) => {
-    internalValue = event.currentTarget.checked;
-    handleInput(internalValue);
-  };
-
-  const handleInputString = (event: { currentTarget: HTMLTextAreaElement }) => {
-    internalValue = event.currentTarget.value;
-    handleInput(internalValue);
+    if (Array.isArray(internalValue)) {
+      handleInput([...internalValue, normalizeValue('', itemType)]);
+    }
   };
 </script>
 
@@ -210,10 +193,13 @@
         <input
           type="checkbox"
           checked={Boolean(value)}
-          on:change={handleInputBoolean}
+          on:change={(event) => handleInput(event.currentTarget.checked)}
         />
       {:else}
-        <textarea value={getStrValue(value)} on:input={handleInputString} />
+        <textarea
+          value={getStrValue(value)}
+          on:input={(event) => handleInput(event.currentTarget.value)}
+        />
       {/if}
     </LabelInputArea>
   </p>
