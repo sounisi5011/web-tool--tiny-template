@@ -18,7 +18,8 @@
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, afterUpdate } from 'svelte';
+  import { autoresize } from 'svelte-textarea-autoresize';
 
   import { objectEntries, isObject } from '../utils';
   import type { TypeNode } from '../utils/handlebars/node';
@@ -125,6 +126,36 @@
     currentValue: readonly Value[],
     itemType: TypeNode,
   ) => () => handleInput([...currentValue, getValueState('', itemType).value]);
+
+  /**
+   * `true`の場合は、`handleInputString()`の処理を1度だけスキップする。
+   */
+  let skipOnceHandleInputString = false;
+  const handleInputString = (event: { currentTarget: HTMLTextAreaElement }) => {
+    if (!skipOnceHandleInputString) {
+      handleInput(event.currentTarget.value);
+    }
+    skipOnceHandleInputString = false;
+  };
+
+  /**
+   * svelte-textarea-autoresizeはvalueプロパティの直接更新でサイズが変更されないため、
+   * コンポーネントが更新されるたびにinputイベントを発生させ、サイズ変更を実行させる。
+   */
+  afterUpdate(() => {
+    if (textInputElement) {
+      const _textInputElement = textInputElement;
+      /**
+       * requestAnimationFrameを使用しないとサイズが変更されない。
+       * おそらく、DOM更新中には適切なサイズを読み取れない。
+       */
+      requestAnimationFrame(() => {
+        skipOnceHandleInputString = true;
+        _textInputElement.dispatchEvent(new Event('input'));
+      });
+    }
+  });
+  let textInputElement: HTMLTextAreaElement | undefined;
 </script>
 
 {#if currentValueState.type === 'record'}
@@ -186,8 +217,10 @@
         />
       {:else}
         <textarea
+          bind:this={textInputElement}
           value={currentValueState.value}
-          on:input={(event) => handleInput(event.currentTarget.value)}
+          on:input={handleInputString}
+          use:autoresize
         />
       {/if}
     </LabelInputArea>
@@ -201,5 +234,8 @@
   details > summary {
     margin-left: -1em;
     cursor: pointer;
+  }
+  textarea {
+    max-height: 3em;
   }
 </style>
