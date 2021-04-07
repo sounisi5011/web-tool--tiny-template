@@ -4,108 +4,50 @@
 
   import type { EventMap } from './components/CodeMirror.svelte';
   import CodeMirror from './components/CodeMirror.svelte';
+  import type { CustomEventMap } from './components/VariableInput.svelte';
   import VariableInput from './components/VariableInput.svelte';
   import {
     templateText as defaultTemplateText,
     variablesRecord as defaultVariablesRecord,
   } from './data/default';
   import Handlebars from './handlebars';
-  import { objectEntries } from './utils';
-  import { triggerEnter, downloadFile, pickFile } from './utils/dom';
+  import { downloadFile, pickFile } from './utils/dom';
   import { getVariableTypeStructure } from './utils/handlebars';
-  import { getTypeNodeByTypeName } from './utils/handlebars/node';
-  import { validateVariableRecord } from './utils/variable-data';
-
-  type VariableData = {
-    name: string;
-    value?: string;
-    focusValue?: boolean;
-    duplicate: boolean;
-  };
-  type VariablesList = ReadonlyArray<VariableData>;
-  type Variables = Record<string, string>;
-
-  function variablesList2variablesObj(variablesList: VariablesList): Variables {
-    return Object.fromEntries(
-      variablesList.map(({ name, value }) => [name, value ?? '']),
-    );
-  }
+  import type { TypeNode } from './utils/handlebars/node';
 
   function render(
     template: typeof compiledTemplate,
-    variablesList: VariablesList,
+    context: unknown,
   ): string | null {
-    const variables = variablesList2variablesObj(variablesList);
     try {
-      return template(variables);
+      return template(context);
     } catch (e) {
       console.error(e);
       return null;
     }
   }
 
-  function existsVariableName(
-    variableName: string,
-    varList: VariablesList = variablesList,
-  ): boolean {
-    return Boolean(varList.find(({ name }) => name === variableName));
-  }
-
-  function removeEmptyVariables(): VariablesList {
-    return variablesList.filter((variable) => variable.value !== undefined);
-  }
-
-  function findDuplicateVariables(
-    variablesList: ReadonlyArray<Omit<VariableData, 'duplicate'>>,
-  ): VariablesList {
-    const nameMap = new Map<string, Set<Omit<VariableData, 'duplicate'>>>();
-    for (const variable of variablesList) {
-      const objSet = nameMap.get(variable.name) ?? new Set();
-      objSet.add(variable);
-      nameMap.set(variable.name, objSet);
-    }
-    return variablesList.map((variable) => {
-      const size = nameMap.get(variable.name)?.size ?? 1;
-      return { ...variable, duplicate: size > 1 };
-    });
-  }
-
-  let variablesList: VariablesList = findDuplicateVariables(
-    objectEntries(defaultVariablesRecord).map(([name, value]) => ({
-      name,
-      value,
-    })),
-  );
+  let variablesContext: unknown = defaultVariablesRecord;
   let templateText: string = defaultTemplateText;
-  let newVariableName = '';
 
-  let definedVariableNameSet: Set<string>;
+  let variableTypeStructure: TypeNode | undefined;
   $: {
     try {
-      const typeStructure = getVariableTypeStructure(templateText);
-      const variableRecord = getTypeNodeByTypeName(typeStructure, 'record')
-        ?.children;
-      definedVariableNameSet = new Set(Object.keys(variableRecord ?? {}));
-      const removedVariablesList = removeEmptyVariables();
-      variablesList = findDuplicateVariables([
-        ...removedVariablesList,
-        ...[...definedVariableNameSet]
-          .filter(
-            (varName) => !existsVariableName(varName, removedVariablesList),
-          )
-          .map((varName) => ({ name: varName })),
-      ]);
+      variableTypeStructure = getVariableTypeStructure(templateText);
     } catch (e) {
       console.error(e);
     }
   }
 
-  let compiledTemplate: Handlebars.TemplateDelegate<Variables>;
+  let compiledTemplate: Handlebars.TemplateDelegate;
   $: compiledTemplate = Handlebars.compile(templateText);
 
   let outputHTMLText: ReturnType<typeof render>;
-  $: outputHTMLText = render(compiledTemplate, variablesList);
+  $: outputHTMLText = render(compiledTemplate, variablesContext);
 
+  const handleInputVariables = (event: CustomEventMap['input']) => {
+    variablesContext = event.detail.value;
+  };
   const handleImportVariables = () => {
     pickFile({ accept: '.json' }, (file) => {
       const reader = new FileReader();
@@ -128,28 +70,12 @@
           return;
         }
 
-        if (!validateVariableRecord(data)) {
-          alert(`ファイルの読み込みが失敗しました。指定されたファイルは適切なデータ形式ではありません。以下のような形式のJSONデータを指定してください:
-  {
-    "変数名1": "値",
-    "変数名2": 42,
-    "変数名3": true,
-    "変数名4": null
-  }`);
-          return;
-        }
-
         if (
           confirm(
             `現在の変数の入力を消去し、ファイルで指定された変数で上書きします。よろしいですか？`,
           )
         ) {
-          variablesList = findDuplicateVariables(
-            Object.entries(data).map(([name, value]) => ({
-              name,
-              value: String(value),
-            })),
-          );
+          variablesContext = data;
         }
       });
       reader.addEventListener('error', () => {
@@ -162,29 +88,11 @@
     });
   };
   const handleExportVariables = () => {
-    const variables = variablesList2variablesObj(variablesList);
     downloadFile({
       filename: 'variables.json',
-      contents: JSON.stringify(variables, null, 2),
+      contents: JSON.stringify(variablesContext, null, 2),
       mime: 'application/json',
     });
-  };
-  const handleRemoveVariable = (variable: VariableData) => () => {
-    variablesList = findDuplicateVariables(
-      variablesList.filter((valData) => valData !== variable),
-    );
-  };
-  const handleAddVariable = (event: MouseEvent | KeyboardEvent) => {
-    event.preventDefault();
-    if (newVariableName !== '' && !existsVariableName(newVariableName)) {
-      variablesList = variablesList.concat({
-        name: newVariableName,
-        value: '',
-        duplicate: false,
-        focusValue: true,
-      });
-      newVariableName = '';
-    }
   };
   const handleSelectAll = (
     event: { currentTarget: HTMLTextAreaElement } | EventMap['focus'],
@@ -201,34 +109,13 @@
 <main>
   <div class="input-area">
     <div class="input-variables-area">
-      {#each variablesList as variable}
-        <div class="variable-input">
-          <VariableInput
-            bind:name={variable.name}
-            bind:value={variable.value}
-            bind:autofocusValue={variable.focusValue}
-            defined={definedVariableNameSet.has(variable.name)}
-            duplicate={variable.duplicate}
-            on:remove={handleRemoveVariable(variable)}
-          />
-        </div>
-      {/each}
-      <p class="add-variables-area">
-        <input
-          type="text"
-          class="variable-name"
-          bind:value={newVariableName}
-          placeholder="新しい変数の名前"
-          on:keydown={triggerEnter(handleAddVariable)}
+      <div class="variables-input-area">
+        <VariableInput
+          typeStructure={variableTypeStructure}
+          value={variablesContext}
+          on:input={handleInputVariables}
         />
-        <input
-          type="button"
-          value="追加"
-          on:click={handleAddVariable}
-          disabled={newVariableName === '' ||
-            existsVariableName(newVariableName)}
-        />
-      </p>
+      </div>
       <p class="variables-import-export-area">
         <input
           type="button"
@@ -303,20 +190,14 @@
     padding: 0.5em;
   }
 
-  .input-variables-area .variable-input,
-  .input-variables-area .add-variables-area,
+  .input-variables-area .variables-input-area,
   .input-variables-area .variables-import-export-area {
     margin: 0.5em 0 0;
   }
 
-  .input-variables-area .variable-input:first-child,
-  .input-variables-area .add-variables-area:first-child,
+  .input-variables-area .variables-input-area:first-child,
   .input-variables-area .variables-import-export-area:first-child {
     margin-top: 0;
-  }
-
-  .input-variables-area .add-variables-area {
-    float: left;
   }
 
   .input-variables-area .variables-import-export-area {

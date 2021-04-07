@@ -1,85 +1,186 @@
-<script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import { autoresize } from 'svelte-textarea-autoresize';
-
-  import { triggerEnter } from '../utils/dom';
-  import { focus } from '../utils/svelte/action';
-
-  let valueInputElem: HTMLTextAreaElement;
-
-  function focusValueInput(event: KeyboardEvent) {
-    event.preventDefault();
-    valueInputElem.focus();
-  }
-
-  export let name: string;
-  export let value: string | undefined;
-  export let defined: boolean;
-  export let duplicate = false;
-  export let autofocusValue = false;
-
-  const dispatch = createEventDispatcher();
+<script lang="ts" context="module">
+  export type Value =
+    | string
+    | number
+    | boolean
+    | Value[]
+    | { [property: string]: Value };
+  type EventMap = {
+    input: {
+      value: Value;
+    };
+  };
+  export type CustomEventMap = {
+    [P in keyof EventMap]: CustomEvent<EventMap[P]>;
+  };
 </script>
 
-<fieldset>
-  <legend>
-    <input
-      type="text"
-      class="variable-name"
-      bind:value={name}
-      placeholder="変数名を入力"
-      on:keydown={triggerEnter(focusValueInput)}
-    />
-    {#if name === '' || !defined || duplicate}
-      <strong class="error">
-        {#if name === ''}
-          変数名が入力されていません
-        {:else if duplicate}
-          同じ名前の変数が定義されています
-        {:else if !defined}
-          テンプレート内に変数が存在しません
+<script lang="ts">
+  import { createEventDispatcher } from 'svelte';
+
+  import { objectEntries, isObject } from '../utils';
+  import type { TypeNode } from '../utils/handlebars/node';
+  import { getTypeNodeByTypeName } from '../utils/handlebars/node';
+  import LabelInputArea from './LabelInputArea.svelte';
+
+  export let typeStructure: TypeNode | undefined;
+  export let value: unknown;
+  export let label = '';
+
+  function getObjValue(
+    currentValue: unknown,
+    prop: string,
+  ): unknown | undefined {
+    if (isObject(currentValue) && !Array.isArray(currentValue)) {
+      return currentValue[prop];
+    }
+    return undefined;
+  }
+
+  function getStrValue(currentValue: unknown): string {
+    if (typeof currentValue === 'string') return currentValue;
+    if (typeof currentValue === 'number' || currentValue === true)
+      return String(currentValue);
+    return '';
+  }
+
+  const dispatch = createEventDispatcher<EventMap>();
+
+  let internalValue: Value | undefined;
+  $: if (internalValue !== undefined)
+    dispatch('input', { value: internalValue });
+
+  const handleInputValue = (event: CustomEventMap['input']) => {
+    internalValue = event.detail.value;
+  };
+
+  const handleInputObjValue = (prop: string) => (
+    event: CustomEventMap['input'],
+  ) => {
+    const newValue = {
+      ...(typeof internalValue === 'object' && !Array.isArray(internalValue)
+        ? internalValue
+        : {}),
+      [prop]: event.detail.value,
+    };
+    internalValue = newValue;
+  };
+
+  const handleInputArrayValue = (index: number) => (
+    event: CustomEventMap['input'],
+  ) => {
+    const newValue = [...(Array.isArray(internalValue) ? internalValue : [])];
+    newValue[index] = event.detail.value;
+    internalValue = newValue;
+  };
+
+  const handleAddArrayItem = () => {
+    const newValue = [
+      ...(Array.isArray(internalValue) ? internalValue : []),
+      0,
+    ];
+    internalValue = newValue;
+  };
+
+  const handleInputBoolean = (event: { currentTarget: HTMLInputElement }) => {
+    internalValue = event.currentTarget.checked;
+  };
+
+  const handleInputString = (event: { currentTarget: HTMLTextAreaElement }) => {
+    internalValue = event.currentTarget.value;
+  };
+</script>
+
+{#if typeStructure}
+  {#if typeStructure.type === 'union'}
+    {#if typeStructure.children.record}
+      <svelte:self
+        typeStructure={typeStructure.children.record}
+        value={value}
+        on:input={handleInputValue}
+      />
+    {:else if typeStructure.children.array}
+      <svelte:self
+        typeStructure={typeStructure.children.array}
+        value={value}
+        on:input={handleInputValue}
+      />
+    {:else if typeStructure.children.string}
+      <svelte:self
+        typeStructure={typeStructure.children.string}
+        value={value}
+        on:input={handleInputValue}
+        label={label}
+      />
+    {:else if typeStructure.children.boolean}
+      <svelte:self
+        typeStructure={typeStructure.children.boolean}
+        value={value}
+        on:input={handleInputValue}
+        label={label}
+      />
+    {/if}
+  {:else if typeStructure.type === 'record'}
+    {#each objectEntries(typeStructure.children) as [prop, valueType]}
+      {#if getTypeNodeByTypeName(valueType, 'record') || getTypeNodeByTypeName(valueType, 'array')}
+        <details open>
+          <summary>{prop}</summary>
+          <svelte:self
+            typeStructure={valueType}
+            value={getObjValue(value, prop)}
+            on:input={handleInputObjValue(prop)}
+          />
+        </details>
+      {:else}
+        <svelte:self
+          typeStructure={valueType}
+          label={prop}
+          value={getObjValue(value, prop)}
+          on:input={handleInputObjValue(prop)}
+        />
+      {/if}
+    {/each}
+  {:else if typeStructure.type === 'array'}
+    <ul>
+      {#if Array.isArray(value)}
+        {#each value as itemValue, index}
+          <li>
+            <svelte:self
+              typeStructure={typeStructure.children}
+              value={itemValue}
+              on:input={handleInputArrayValue(index)}
+            />
+          </li>
+        {/each}
+      {/if}
+      <li>
+        <input type="button" value="追加" on:click={handleAddArrayItem} />
+      </li>
+    </ul>
+  {:else}
+    <p>
+      <LabelInputArea>
+        <span slot="labelText" class="labelText">{label}</span>
+        {#if typeStructure.type === 'boolean'}
+          <input
+            type="checkbox"
+            checked={Boolean(value)}
+            on:change={handleInputBoolean}
+          />
+        {:else}
+          <textarea value={getStrValue(value)} on:input={handleInputString} />
         {/if}
-      </strong>
-      <input type="button" value="削除" on:click={() => dispatch('remove')} />
-    {/if}
-    {#if value === undefined}
-      <em class="info">変数を検知したため、自動で追加されました</em>
-    {/if}
-  </legend>
-  <textarea
-    use:autoresize
-    bind:value
-    placeholder="変数の値を入力"
-    bind:this={valueInputElem}
-    use:focus={[autofocusValue, () => (autofocusValue = false)]}
-  />
-</fieldset>
+      </LabelInputArea>
+    </p>
+  {/if}
+{/if}
 
 <style>
-  :global(input[type='text'].variable-name) {
-    color: deepskyblue;
-    font-size: 75%;
+  details {
+    margin-left: 1em;
   }
-
-  strong.error {
-    color: red;
-    font-size: smaller;
-  }
-
-  em.info {
-    font-style: normal;
-    color: lime;
-    font-size: smaller;
-  }
-
-  fieldset {
-    margin: 0;
-  }
-
-  fieldset > textarea {
-    width: 100%;
-    height: 2.5em;
-    min-height: 2.5em;
-    resize: vertical;
+  details > summary {
+    margin-left: -1em;
+    cursor: pointer;
   }
 </style>

@@ -1,3 +1,7 @@
+export function isObject(value: unknown): value is Record<PropertyKey, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
 export function isSingleTuple<T>(array: readonly [T?, ...unknown[]]): array is [T] {
     return array.length === 1;
 }
