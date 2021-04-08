@@ -311,6 +311,7 @@
   }
   .string-type textarea {
     box-sizing: border-box;
+    resize: none;
     width: 100%;
     max-height: 4em;
   }
