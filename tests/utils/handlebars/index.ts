@@ -2740,6 +2740,25 @@ describe('getVariableTypeStructure()', () => {
                     }),
                 ],
                 [
+                    '{{#with person}} {{this}} {{/with}}',
+                    recordType({
+                        person: unionType([
+                            recordType({}),
+                            stringType,
+                        ]),
+                    }),
+                    [
+                        [
+                            { person: 'John' },
+                            ` John `,
+                        ],
+                        [
+                            { person: { this: 'John' } },
+                            ` [object Object] `,
+                        ],
+                    ],
+                ],
+                [
                     '{{#with person}} {{firstname}} {{lastname}} {{/with}}',
                     recordType({
                         person: recordType({

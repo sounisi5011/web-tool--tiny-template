@@ -39,10 +39,12 @@
   function getValueState(currentValue: unknown, type: TypeNode): StateValue {
     if (type.type === 'union') {
       const targetType =
-        type.children.record ||
-        type.children.array ||
-        type.children.string ||
-        type.children.boolean;
+        type.children.record &&
+        Object.keys(type.children.record.children).length > 0
+          ? type.children.record
+          : type.children.array ||
+            type.children.string ||
+            type.children.boolean;
       if (targetType) return getValueState(currentValue, targetType);
     } else if (type.type === 'record') {
       let entries: StateRecordEntry[] = [];
