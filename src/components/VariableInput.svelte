@@ -215,7 +215,7 @@
     class:string-type={currentValueState.type === 'string'}
     class:has-label={Boolean(label)}
   >
-    <LabelInputArea>
+    <LabelInputArea isShowLabel={Boolean(label)}>
       <span slot="labelText">{label}</span>
       {#if currentValueState.type === 'boolean'}
         <input
