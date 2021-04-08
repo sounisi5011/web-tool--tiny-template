@@ -87,6 +87,12 @@
       mime: 'application/json',
     });
   };
+  const handleExportHTML = (htmlText: string) => () =>
+    downloadFile({
+      filename: 'result.html',
+      contents: htmlText,
+      mime: 'text/html',
+    });
   const handleSelectAll = (
     event: { currentTarget: HTMLTextAreaElement } | EventMap['focus'],
   ) => {
@@ -148,6 +154,13 @@
         on:focus={handleSelectAll}
         class="editor"
       />
+      <p class="html-export-area">
+        <input
+          type="button"
+          value="HTMLをエクスポート"
+          on:click={handleExportHTML(outputData.html)}
+        />
+      </p>
     {:else}
       <div class="error">
         <strong>テンプレートの変換が失敗しました。</strong>
@@ -178,9 +191,7 @@
   .output-area {
     flex: 1;
     width: 50%;
-  }
 
-  .input-area {
     display: flex;
     flex-direction: column;
   }
@@ -233,16 +244,22 @@
   }
 
   .output-area {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: center; /* エラー表示の縦位置の中央揃え用 */
     border: none 1px #ccc;
     border-left-style: solid;
+  }
+
+  .html-export-area {
+    margin: 0;
+    border-top: solid 1px #ccc;
+    padding: 0.2em 0;
+    text-align: right;
   }
 
   .output-area .error {
     max-width: 100%;
     box-sizing: border-box;
+    margin: 0 auto; /* エラー表示の横位置の中央揃え用 */
     padding: 0 2em;
   }
 
