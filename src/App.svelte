@@ -149,8 +149,8 @@
         class="editor"
       />
     {:else}
-      <div>
-        <strong class="error">テンプレートの変換が失敗しました。</strong>
+      <div class="error">
+        <strong>テンプレートの変換が失敗しました。</strong>
         <pre>{
           outputData.error instanceof Error
             ? `${outputData.error.name}\n${outputData.error.message}`
@@ -177,6 +177,7 @@
   .input-area,
   .output-area {
     flex: 1;
+    width: 50%;
   }
 
   .input-area {
@@ -239,7 +240,17 @@
     border-left-style: solid;
   }
 
-  .output-area strong.error {
+  .output-area .error {
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0 2em;
+  }
+
+  .output-area .error strong {
     color: red;
+  }
+
+  .output-area .error pre {
+    overflow: auto;
   }
 </style>
