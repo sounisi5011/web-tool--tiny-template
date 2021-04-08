@@ -1,5 +1,6 @@
 node_modules/
 .rollup.cache/
+coverage/
 .eslintcache
 *.tsbuildinfo
 /.node-version

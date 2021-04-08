@@ -1,107 +1,45 @@
 <script lang="ts">
   import 'codemirror/mode/xml/xml';
-  import Mustache from 'mustache';
+  import 'codemirror/mode/handlebars/handlebars';
 
-  import './codemirror-mode/mustache';
   import type { EventMap } from './components/CodeMirror.svelte';
   import CodeMirror from './components/CodeMirror.svelte';
   import VariableInput from './components/VariableInput.svelte';
-  import { triggerEnter, downloadFile, pickFile } from './utils/dom';
-  import { getVariableNameList } from './utils/mustache';
-  import { validateVariableRecord } from './utils/variable-data';
-
-  type VariableData = {
-    name: string;
-    value?: string;
-    focusValue?: boolean;
-    duplicate: boolean;
-  };
-  type VariablesList = ReadonlyArray<VariableData>;
-
-  function variablesList2variablesObj(
-    variablesList: VariablesList,
-  ): Record<string, string> {
-    return Object.fromEntries(
-      variablesList.map(({ name, value }) => [name, value ?? '']),
-    );
-  }
+  import {
+    templateText as defaultTemplateText,
+    variablesRecord as defaultVariablesRecord,
+  } from './data/default';
+  import Handlebars from './handlebars';
+  import { downloadFile, pickFile } from './utils/dom';
+  import { getVariableTypeStructure } from './utils/handlebars';
+  import type { TypeNode } from './utils/handlebars/node';
 
   function render(
-    template: string,
-    variablesList: VariablesList,
-  ): string | null {
-    const variables = variablesList2variablesObj(variablesList);
+    template: typeof compiledTemplate,
+    context: unknown,
+  ): { html: string } | { html?: undefined; error: unknown } {
     try {
-      return Mustache.render(template, variables);
-    } catch (e) {
-      console.error(e);
-      return null;
+      return { html: template(context) };
+    } catch (error) {
+      return { error };
     }
   }
 
-  function existsVariableName(
-    variableName: string,
-    varList: VariablesList = variablesList,
-  ): boolean {
-    return Boolean(varList.find(({ name }) => name === variableName));
-  }
+  let variablesContext: unknown = defaultVariablesRecord;
+  let templateText: string = defaultTemplateText;
 
-  function removeEmptyVariables(): VariablesList {
-    return variablesList.filter((variable) => variable.value !== undefined);
-  }
-
-  function findDuplicateVariables(
-    variablesList: ReadonlyArray<Omit<VariableData, 'duplicate'>>,
-  ): VariablesList {
-    const nameMap = new Map<string, Set<Omit<VariableData, 'duplicate'>>>();
-    for (const variable of variablesList) {
-      const objSet = nameMap.get(variable.name) ?? new Set();
-      objSet.add(variable);
-      nameMap.set(variable.name, objSet);
-    }
-    return variablesList.map((variable) => {
-      const size = nameMap.get(variable.name)?.size ?? 1;
-      return { ...variable, duplicate: size > 1 };
-    });
-  }
-
-  let variablesList: VariablesList = findDuplicateVariables([
-    { name: 'title', value: 'ゲト博士' },
-    { name: 'せつめい', value: 'ドフェチいモフモフキャラだよ♥' },
-  ]);
-  let templateText = `<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{{ title }}</title>
-  </head>
-  <body>
-    <main>{{ せつめい }}</main>
-  </body>
-</html>`;
-  let newVariableName = '';
-
-  let definedVariableNameSet: Set<string>;
+  let variableTypeStructure: TypeNode | undefined;
   $: {
     try {
-      definedVariableNameSet = new Set(getVariableNameList(templateText));
-      const removedVariablesList = removeEmptyVariables();
-      variablesList = findDuplicateVariables([
-        ...removedVariablesList,
-        ...[...definedVariableNameSet]
-          .filter(
-            (varName) => !existsVariableName(varName, removedVariablesList),
-          )
-          .map((varName) => ({ name: varName })),
-      ]);
-    } catch (e) {
-      console.error(e);
-    }
+      variableTypeStructure = getVariableTypeStructure(templateText);
+    } catch {}
   }
 
-  let outputHTMLText: ReturnType<typeof render>;
-  $: outputHTMLText = render(templateText, variablesList);
+  let compiledTemplate: Handlebars.TemplateDelegate;
+  $: compiledTemplate = Handlebars.compile(templateText);
+
+  let outputData: ReturnType<typeof render>;
+  $: outputData = render(compiledTemplate, variablesContext);
 
   const handleImportVariables = () => {
     pickFile({ accept: '.json' }, (file) => {
@@ -125,28 +63,12 @@
           return;
         }
 
-        if (!validateVariableRecord(data)) {
-          alert(`ファイルの読み込みが失敗しました。指定されたファイルは適切なデータ形式ではありません。以下のような形式のJSONデータを指定してください:
-  {
-    "変数名1": "値",
-    "変数名2": 42,
-    "変数名3": true,
-    "変数名4": null
-  }`);
-          return;
-        }
-
         if (
           confirm(
             `現在の変数の入力を消去し、ファイルで指定された変数で上書きします。よろしいですか？`,
           )
         ) {
-          variablesList = findDuplicateVariables(
-            Object.entries(data).map(([name, value]) => ({
-              name,
-              value: String(value),
-            })),
-          );
+          variablesContext = data;
         }
       });
       reader.addEventListener('error', () => {
@@ -159,29 +81,11 @@
     });
   };
   const handleExportVariables = () => {
-    const variables = variablesList2variablesObj(variablesList);
     downloadFile({
       filename: 'variables.json',
-      contents: JSON.stringify(variables, null, 2),
+      contents: JSON.stringify(variablesContext, null, 2),
       mime: 'application/json',
     });
-  };
-  const handleRemoveVariable = (variable: VariableData) => () => {
-    variablesList = findDuplicateVariables(
-      variablesList.filter((valData) => valData !== variable),
-    );
-  };
-  const handleAddVariable = (event: MouseEvent | KeyboardEvent) => {
-    event.preventDefault();
-    if (newVariableName !== '' && !existsVariableName(newVariableName)) {
-      variablesList = variablesList.concat({
-        name: newVariableName,
-        value: '',
-        duplicate: false,
-        focusValue: true,
-      });
-      newVariableName = '';
-    }
   };
   const handleSelectAll = (
     event: { currentTarget: HTMLTextAreaElement } | EventMap['focus'],
@@ -198,34 +102,14 @@
 <main>
   <div class="input-area">
     <div class="input-variables-area">
-      {#each variablesList as variable}
-        <div class="variable-input">
+      <div class="variables-input-area">
+        {#if variableTypeStructure}
           <VariableInput
-            bind:name={variable.name}
-            bind:value={variable.value}
-            bind:autofocusValue={variable.focusValue}
-            defined={definedVariableNameSet.has(variable.name)}
-            duplicate={variable.duplicate}
-            on:remove={handleRemoveVariable(variable)}
+            typeStructure={variableTypeStructure}
+            bind:value={variablesContext}
           />
-        </div>
-      {/each}
-      <p class="add-variables-area">
-        <input
-          type="text"
-          class="variable-name"
-          bind:value={newVariableName}
-          placeholder="新しい変数の名前"
-          on:keydown={triggerEnter(handleAddVariable)}
-        />
-        <input
-          type="button"
-          value="追加"
-          on:click={handleAddVariable}
-          disabled={newVariableName === '' ||
-            existsVariableName(newVariableName)}
-        />
-      </p>
+        {/if}
+      </div>
       <p class="variables-import-export-area">
         <input
           type="button"
@@ -241,7 +125,7 @@
     </div>
     <div class="input-template-area">
       <CodeMirror
-        mode="mustache"
+        mode="handlebars"
         bind:value={templateText}
         placeholder="テンプレートを入力"
         lineWrapping
@@ -250,22 +134,29 @@
     </div>
     <p class="input-template-help">
       テンプレートの言語は
-      <a href="http://mustache.github.io/" target="_blank">Mustache</a>
+      <a href="https://handlebarsjs.com/" target="_blank">Handlebars</a>
       です。
     </p>
   </div>
   <div class="output-area">
-    {#if typeof outputHTMLText === 'string'}
+    {#if outputData.html !== undefined}
       <CodeMirror
         mode="text/html"
         readonly
-        value={outputHTMLText}
+        value={outputData.html}
         lineWrapping
         on:focus={handleSelectAll}
         class="editor"
       />
     {:else}
-      <strong class="error">テンプレートの変換が失敗しました。</strong>
+      <div class="error">
+        <strong>テンプレートの変換が失敗しました。</strong>
+        <pre>{
+          outputData.error instanceof Error
+            ? `${outputData.error.name}\n${outputData.error.message}`
+            : `type: ${typeof outputData.error}\n${outputData.error}`
+        }</pre>
+      </div>
     {/if}
   </div>
 </main>
@@ -286,6 +177,7 @@
   .input-area,
   .output-area {
     flex: 1;
+    width: 50%;
   }
 
   .input-area {
@@ -300,20 +192,14 @@
     padding: 0.5em;
   }
 
-  .input-variables-area .variable-input,
-  .input-variables-area .add-variables-area,
+  .input-variables-area .variables-input-area,
   .input-variables-area .variables-import-export-area {
     margin: 0.5em 0 0;
   }
 
-  .input-variables-area .variable-input:first-child,
-  .input-variables-area .add-variables-area:first-child,
+  .input-variables-area .variables-input-area:first-child,
   .input-variables-area .variables-import-export-area:first-child {
     margin-top: 0;
-  }
-
-  .input-variables-area .add-variables-area {
-    float: left;
   }
 
   .input-variables-area .variables-import-export-area {
@@ -354,7 +240,17 @@
     border-left-style: solid;
   }
 
-  .output-area strong.error {
+  .output-area .error {
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0 2em;
+  }
+
+  .output-area .error strong {
     color: red;
+  }
+
+  .output-area .error pre {
+    overflow: auto;
   }
 </style>
