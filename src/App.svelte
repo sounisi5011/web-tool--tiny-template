@@ -151,7 +151,11 @@
     {:else}
       <div>
         <strong class="error">テンプレートの変換が失敗しました。</strong>
-        <pre>{outputData.error instanceof Error ? outputData.error.message : outputData.error}</pre>
+        <pre>{
+          outputData.error instanceof Error
+            ? `${outputData.error.name}\n${outputData.error.message}`
+            : `type: ${typeof outputData.error}\n${outputData.error}`
+        }</pre>
       </div>
     {/if}
   </div>
