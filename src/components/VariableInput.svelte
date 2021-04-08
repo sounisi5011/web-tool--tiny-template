@@ -161,13 +161,15 @@
 {#if currentValueState.type === 'record'}
   {#each currentValueState.entries as [prop, { type: valueType, value: childValue }]}
     {#if getTypeNodeByTypeName(valueType, 'record') || getTypeNodeByTypeName(valueType, 'array')}
-      <details open>
+      <details class="record-entry" open>
         <summary>{prop}</summary>
-        <svelte:self
-          typeStructure={valueType}
-          value={childValue}
-          on:input={handleInputObjValue(currentValueState.value, prop)}
-        />
+        <div class="child-items">
+          <svelte:self
+            typeStructure={valueType}
+            value={childValue}
+            on:input={handleInputObjValue(currentValueState.value, prop)}
+          />
+        </div>
       </details>
     {:else}
       <svelte:self
@@ -179,22 +181,24 @@
     {/if}
   {/each}
 {:else if currentValueState.type === 'array'}
-  <ul>
+  <ul class="array-type">
     {#each currentValueState.value as itemValue, index}
-      <li>
+      <li class="child-items">
         <svelte:self
           typeStructure={currentValueState.itemType}
           value={itemValue}
           on:input={handleInputArrayValue(currentValueState.value, index)}
         />
-        <input
-          type="button"
-          value="削除"
-          on:click={handleRemoveArrayItem(currentValueState.value, index)}
-        />
+        <p class="remove-array-item">
+          <input
+            type="button"
+            value="削除"
+            on:click={handleRemoveArrayItem(currentValueState.value, index)}
+          />
+        </p>
       </li>
     {/each}
-    <li>
+    <li class="add-array-item">
       <input
         type="button"
         value="追加"
@@ -206,9 +210,13 @@
     </li>
   </ul>
 {:else}
-  <p>
+  <p
+    class="primitive-type"
+    class:string-type={currentValueState.type === 'string'}
+    class:has-label={Boolean(label)}
+  >
     <LabelInputArea>
-      <span slot="labelText" class="labelText">{label}</span>
+      <span slot="labelText">{label}</span>
       {#if currentValueState.type === 'boolean'}
         <input
           type="checkbox"
@@ -229,13 +237,79 @@
 
 <style>
   details {
-    margin-left: 1em;
+    padding-left: 1em;
   }
   details > summary {
     margin-left: -1em;
     cursor: pointer;
   }
-  textarea {
-    max-height: 3em;
+  details > summary:hover {
+    background-color: #ccc;
+  }
+
+  .record-entry > summary {
+    margin-bottom: 0.5em;
+  }
+  .record-entry > .child-items {
+    margin: 0.5em 0;
+    border: solid 1px #ccc;
+    padding: 0.5em;
+  }
+
+  .array-type {
+    list-style: none;
+    padding: 0;
+  }
+  .array-type > li + li {
+    margin-top: 0.5em;
+    border-top: solid 1px #ccc;
+    padding-top: 0.5em;
+  }
+
+  .add-array-item input[type='button'] {
+    display: block;
+    margin: 0 auto;
+    min-width: min-content;
+    width: 50%;
+  }
+
+  .remove-array-item input[type='button'] {
+    display: block;
+    margin-left: auto;
+  }
+
+  .child-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+  }
+  .child-items > :global(*) {
+    width: 100%;
+    margin: 0;
+  }
+  .child-items > :global(.primitive-type.has-label) {
+    width: calc(50% - 0.5em / 2);
+  }
+
+  .primitive-type {
+    margin: 0;
+  }
+  .primitive-type :global(label) {
+    display: block;
+    cursor: pointer;
+  }
+  .primitive-type :global(label):hover {
+    background-color: lightgreen;
+  }
+
+  .string-type :global(label) {
+    display: flex;
+    flex-flow: column;
+    cursor: text;
+  }
+  .string-type textarea {
+    box-sizing: border-box;
+    width: 100%;
+    max-height: 4em;
   }
 </style>
