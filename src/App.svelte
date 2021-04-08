@@ -17,12 +17,11 @@
   function render(
     template: typeof compiledTemplate,
     context: unknown,
-  ): string | null {
+  ): { html: string } | { html?: undefined; error: unknown } {
     try {
-      return template(context);
-    } catch (e) {
-      console.error(e);
-      return null;
+      return { html: template(context) };
+    } catch (error) {
+      return { error };
     }
   }
 
@@ -33,16 +32,14 @@
   $: {
     try {
       variableTypeStructure = getVariableTypeStructure(templateText);
-    } catch (e) {
-      console.error(e);
-    }
+    } catch {}
   }
 
   let compiledTemplate: Handlebars.TemplateDelegate;
   $: compiledTemplate = Handlebars.compile(templateText);
 
-  let outputHTMLText: ReturnType<typeof render>;
-  $: outputHTMLText = render(compiledTemplate, variablesContext);
+  let outputData: ReturnType<typeof render>;
+  $: outputData = render(compiledTemplate, variablesContext);
 
   const handleImportVariables = () => {
     pickFile({ accept: '.json' }, (file) => {
@@ -142,17 +139,20 @@
     </p>
   </div>
   <div class="output-area">
-    {#if typeof outputHTMLText === 'string'}
+    {#if outputData.html !== undefined}
       <CodeMirror
         mode="text/html"
         readonly
-        value={outputHTMLText}
+        value={outputData.html}
         lineWrapping
         on:focus={handleSelectAll}
         class="editor"
       />
     {:else}
-      <strong class="error">テンプレートの変換が失敗しました。</strong>
+      <div>
+        <strong class="error">テンプレートの変換が失敗しました。</strong>
+        <pre>{outputData.error instanceof Error ? outputData.error.message : outputData.error}</pre>
+      </div>
     {/if}
   </div>
 </main>
