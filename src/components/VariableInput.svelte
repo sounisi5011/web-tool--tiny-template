@@ -47,24 +47,24 @@
             type.children.boolean;
       if (targetType) return getValueState(currentValue, targetType);
     } else if (type.type === 'record') {
-      let entries: StateRecordEntry[] = [];
+      const inputValue =
+        isObject(currentValue) && !Array.isArray(currentValue)
+          ? currentValue
+          : undefined;
       const value: RecordValue = {};
-      if (isObject(currentValue) && !Array.isArray(currentValue)) {
-        entries = objectEntries(type.children).map<StateRecordEntry>(
-          ([prop, valueType]) => {
-            const childValue = getValueState(currentValue[prop], valueType)
-              .value;
-            value[prop] = childValue;
-            return [
-              prop,
-              {
-                type: valueType,
-                value: childValue,
-              },
-            ];
-          },
-        );
-      }
+      const entries = objectEntries(type.children).map<StateRecordEntry>(
+        ([prop, valueType]) => {
+          const childValue = getValueState(inputValue?.[prop], valueType).value;
+          value[prop] = childValue;
+          return [
+            prop,
+            {
+              type: valueType,
+              value: childValue,
+            },
+          ];
+        },
+      );
       return { type: 'record', entries, value };
     } else if (type.type === 'array') {
       const itemType = type.children;
