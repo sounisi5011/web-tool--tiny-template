@@ -54,10 +54,11 @@
     cursor: pointer;
     height: 100%;
     border: solid 1px #ccc;
-    background-color: inherit;
+    background-color: #ccc;
   }
 
   ul[role='tablist'] button[aria-selected='true'] {
     border-bottom-color: transparent;
+    background-color: inherit;
   }
 </style>
