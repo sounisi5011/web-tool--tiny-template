@@ -290,7 +290,8 @@
     margin: 0;
   }
   .child-items > :global(.primitive-type.has-label) {
-    width: calc(50% - 0.5em / 2);
+    flex: 1;
+    min-width: 10em;
   }
 
   .primitive-type {
