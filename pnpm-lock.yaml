@@ -32,7 +32,6 @@ specifiers:
   prettier-package-json: ^2.1.3
   prettier-plugin-svelte: ^2.2.0
   rollup: ^2.42.4
-  rollup-plugin-css-only: ^3.1.0
   rollup-plugin-livereload: ^2.0.0
   rollup-plugin-postcss: ^4.0.0
   rollup-plugin-svelte: ^7.1.0
@@ -82,7 +81,6 @@ devDependencies:
   prettier-package-json: 2.1.3
   prettier-plugin-svelte: 2.2.0_prettier@2.2.1+svelte@3.35.0
   rollup: 2.42.4
-  rollup-plugin-css-only: 3.1.0_rollup@2.42.4
   rollup-plugin-livereload: 2.0.0
   rollup-plugin-postcss: 4.0.0_postcss@8.2.9
   rollup-plugin-svelte: 7.1.0_rollup@2.42.4+svelte@3.35.0
@@ -714,17 +712,6 @@ packages:
     dependencies:
       '@types/estree': 0.0.39
       estree-walker: 1.0.1
-      picomatch: 2.2.2
-      rollup: 2.42.4
-    dev: true
-
-  /@rollup/pluginutils/4.1.0_rollup@2.42.4:
-    resolution: {integrity: sha512-TrBhfJkFxA+ER+ew2U2/fHbebhLT/l/2pRk0hfj9KusXUuRXd2v0R58AfaZK9VXDQ4TogOSEmICVrQAA3zFnHQ==}
-    engines: {node: '>= 8.0.0'}
-    peerDependencies:
-      rollup: ^1.20.0||^2.0.0
-    dependencies:
-      estree-walker: 2.0.2
       picomatch: 2.2.2
       rollup: 2.42.4
     dev: true
@@ -5628,16 +5615,6 @@ packages:
     hasBin: true
     dependencies:
       glob: 7.1.6
-    dev: true
-
-  /rollup-plugin-css-only/3.1.0_rollup@2.42.4:
-    resolution: {integrity: sha512-TYMOE5uoD76vpj+RTkQLzC9cQtbnJNktHPB507FzRWBVaofg7KhIqq1kGbcVOadARSozWF883Ho9KpSPKH8gqA==}
-    engines: {node: '>=10.12.0'}
-    peerDependencies:
-      rollup: 1 || 2
-    dependencies:
-      '@rollup/pluginutils': 4.1.0_rollup@2.42.4
-      rollup: 2.42.4
     dev: true
 
   /rollup-plugin-livereload/2.0.0:
