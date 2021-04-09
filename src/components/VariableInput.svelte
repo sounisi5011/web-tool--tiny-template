@@ -287,11 +287,13 @@
   }
   .child-items > :global(*) {
     width: 100%;
+    box-sizing: border-box;
     margin: 0;
   }
   .child-items > :global(.primitive-type.has-label) {
     flex: 1;
     min-width: 10em;
+    min-width: min(10em, 100%);
   }
 
   @supports (display: grid) and
