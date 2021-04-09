@@ -287,10 +287,30 @@
   }
   .child-items > :global(*) {
     width: 100%;
+    box-sizing: border-box;
     margin: 0;
   }
   .child-items > :global(.primitive-type.has-label) {
-    width: calc(50% - 0.5em / 2);
+    flex: 1;
+    min-width: 10em;
+    min-width: min(10em, 100%);
+  }
+
+  @supports (display: grid) and
+    (grid-template-columns: repeat(auto-fit, minmax(min(10em, 100%), 1fr))) and
+    (grid-column: 1 / -1) and (grid-column: auto) {
+    .child-items {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(10em, 100%), 1fr));
+    }
+    .child-items > :global(*) {
+      width: auto;
+      grid-column: 1 / -1;
+    }
+    .child-items > :global(.primitive-type.has-label) {
+      min-width: auto;
+      grid-column: auto;
+    }
   }
 
   .primitive-type {
