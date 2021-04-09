@@ -1,8 +1,8 @@
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
-import css from 'rollup-plugin-css-only';
 import livereload from 'rollup-plugin-livereload';
+import postcss from 'rollup-plugin-postcss';
 import svelte from 'rollup-plugin-svelte';
 import { terser } from 'rollup-plugin-terser';
 import sveltePreprocess from 'svelte-preprocess';
@@ -48,7 +48,7 @@ export default {
     }),
 
     // we'll extract any component CSS out into a separate file - better for performance
-    css({ output: 'main.css' }),
+    postcss({ extract: true }),
 
     // If you have external dependencies installed from npm, you'll most likely need these plugins.
     // In some cases you'll need additional configuration - consult the documentation for details:

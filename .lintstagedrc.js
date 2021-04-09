@@ -11,11 +11,12 @@ function startsWith(fullPath, searchPath) {
 }
 
 /**
- * @param {string} basename
+ * @param {string|RegExp} basename
  * @returns {function(string): boolean}
  */
 function baseFilter(basename) {
-  return filename => path.basename(filename) === basename;
+  return filename =>
+    basename instanceof RegExp ? basename.test(path.basename(filename)) : path.basename(filename) === basename;
 }
 
 /**
@@ -26,6 +27,8 @@ function extFilter(...extList) {
   extList = extList.map(ext => ext.replace(/^\.?/, '.'));
   return filename => extList.includes(path.extname(filename));
 }
+
+const POSTCSS_CONFIG_REGEXP = /^(?:\.postcssrc(?:\.(?:js(?:on)?|ya?ml))?|postcss\.config\.js)$/;
 
 module.exports = {
   /**
@@ -67,7 +70,11 @@ module.exports = {
       );
     }
 
-    if (filenames.some(filename => startsWith(filename, 'src') || startsWith(filename, 'docs'))) {
+    if (
+      filenames.some(filename =>
+        startsWith(filename, 'src') || startsWith(filename, 'docs') || baseFilter(POSTCSS_CONFIG_REGEXP)(filename)
+      )
+    ) {
       commands.push(
         'run-s build',
         'git add ./docs/',
