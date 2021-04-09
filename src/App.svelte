@@ -282,6 +282,7 @@
   .right-area {
     flex: 1;
     width: 50%;
+    box-sizing: border-box;
 
     display: flex;
     flex-direction: column;
@@ -290,6 +291,10 @@
   .left-area > ul[role='tablist'],
   .right-area > ul[role='tablist'] {
     margin-top: 0.5em;
+  }
+
+  .left-area {
+    border-right: solid 1px #ccc;
   }
 
   .variables-input-area,
