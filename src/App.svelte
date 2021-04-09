@@ -41,6 +41,18 @@
   let outputData: ReturnType<typeof render>;
   $: outputData = render(compiledTemplate, variablesContext);
 
+  const tabSelectedMap: { template: null | 'L' | 'R' } = {
+    template: 'R',
+  };
+
+  const handleSelectTemplateTab = (areaType: 'L' | 'R') => () => {
+    tabSelectedMap.template = areaType;
+  };
+  const handleUnelectTemplateTab = (areaType: 'L' | 'R') => () => {
+    if (tabSelectedMap.template === areaType) {
+      tabSelectedMap.template = null;
+    }
+  };
   const handleImportVariables = () => {
     pickFile({ accept: '.json' }, (file) => {
       const reader = new FileReader();
@@ -106,8 +118,46 @@
 </script>
 
 <main>
-  <div class="input-area">
-    <div class="input-variables-area">
+  <div class="left-area">
+    <ul role="tablist">
+      <li role="presentation">
+        <button
+          role="tab"
+          aria-selected={tabSelectedMap.template === 'L'}
+          on:click={handleSelectTemplateTab('L')}>テンプレート</button
+        >
+      </li>
+      <li role="presentation">
+        <button
+          role="tab"
+          aria-selected={tabSelectedMap.template !== 'L'}
+          on:click={handleUnelectTemplateTab('L')}>変数</button
+        >
+      </li>
+    </ul>
+    {#if tabSelectedMap.template === 'L'}
+      <CodeMirror
+        mode="handlebars"
+        bind:value={templateText}
+        placeholder="テンプレートを入力"
+        lineWrapping
+        class="template-editor"
+      />
+      <p class="input-template-help">
+        テンプレートの言語は
+        <a href="https://handlebarsjs.com/" target="_blank">Handlebars</a>
+        です。
+      </p>
+    {:else if tabSelectedMap.template === 'R' && 'error' in outputData}
+      <div class="error">
+        <strong>テンプレートの変換が失敗しました。</strong>
+        <pre>{
+            outputData.error instanceof Error
+              ? `${outputData.error.name}\n${outputData.error.message}`
+              : `type: ${typeof outputData.error}\n${outputData.error}`
+          }</pre>
+      </div>
+    {:else}
       <div class="variables-input-area">
         {#if variableTypeStructure}
           <VariableInput
@@ -128,31 +178,46 @@
           on:click={handleExportVariables}
         />
       </p>
-    </div>
-    <div class="input-template-area">
+    {/if}
+  </div>
+  <div class="right-area">
+    <ul role="tablist">
+      <li role="presentation">
+        <button
+          role="tab"
+          aria-selected={tabSelectedMap.template === 'R'}
+          on:click={handleSelectTemplateTab('R')}>テンプレート</button
+        >
+      </li>
+      <li role="presentation">
+        <button
+          role="tab"
+          aria-selected={tabSelectedMap.template !== 'R'}
+          on:click={handleUnelectTemplateTab('R')}>HTML</button
+        >
+      </li>
+    </ul>
+    {#if tabSelectedMap.template === 'R'}
       <CodeMirror
         mode="handlebars"
         bind:value={templateText}
         placeholder="テンプレートを入力"
         lineWrapping
-        class="editor"
+        class="template-editor"
       />
-    </div>
-    <p class="input-template-help">
-      テンプレートの言語は
-      <a href="https://handlebarsjs.com/" target="_blank">Handlebars</a>
-      です。
-    </p>
-  </div>
-  <div class="output-area">
-    {#if outputData.html !== undefined}
+      <p class="input-template-help">
+        テンプレートの言語は
+        <a href="https://handlebarsjs.com/" target="_blank">Handlebars</a>
+        です。
+      </p>
+    {:else if outputData.html !== undefined}
       <CodeMirror
         mode="text/html"
         readonly
         value={outputData.html}
         lineWrapping
         on:focus={handleSelectAll}
-        class="editor"
+        class="output-html-editor"
       />
       <p class="html-export-area">
         <input
@@ -165,10 +230,10 @@
       <div class="error">
         <strong>テンプレートの変換が失敗しました。</strong>
         <pre>{
-          outputData.error instanceof Error
-            ? `${outputData.error.name}\n${outputData.error.message}`
-            : `type: ${typeof outputData.error}\n${outputData.error}`
-        }</pre>
+            outputData.error instanceof Error
+              ? `${outputData.error.name}\n${outputData.error.message}`
+              : `type: ${typeof outputData.error}\n${outputData.error}`
+          }</pre>
       </div>
     {/if}
   </div>
@@ -185,10 +250,36 @@
 
   main {
     display: flex;
+    box-sizing: border-box;
+    border-top: solid 1px #ccc;
+    border-bottom: solid 1px #ccc;
   }
 
-  .input-area,
-  .output-area {
+  ul[role='tablist'] {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    border-bottom: solid 1px #ccc;
+    padding: 0 0.5em;
+  }
+
+  ul[role='tablist'] li + li {
+    margin-left: 0.5em;
+  }
+
+  ul[role='tablist'] button {
+    height: 100%;
+    border: solid 1px #ccc;
+    background-color: white;
+    color: black;
+  }
+
+  ul[role='tablist'] button[aria-selected='true'] {
+    border-bottom-color: transparent;
+  }
+
+  .left-area,
+  .right-area {
     flex: 1;
     width: 50%;
 
@@ -196,78 +287,68 @@
     flex-direction: column;
   }
 
-  .input-variables-area {
-    height: 30%;
+  .left-area > ul[role='tablist'],
+  .right-area > ul[role='tablist'] {
+    margin-top: 0.5em;
+  }
+
+  .variables-input-area,
+  * :global(.template-editor),
+  * :global(.output-html-editor),
+  .error {
+    flex: 1;
+  }
+
+  .variables-input-area {
     overflow-y: auto;
-    resize: vertical;
     padding: 0.5em;
   }
 
-  .input-variables-area .variables-input-area,
-  .input-variables-area .variables-import-export-area {
-    margin: 0.5em 0 0;
-  }
-
-  .input-variables-area .variables-input-area:first-child,
-  .input-variables-area .variables-import-export-area:first-child {
-    margin-top: 0;
-  }
-
-  .input-variables-area .variables-import-export-area {
-    float: right;
-  }
-
-  .input-variables-area
-    .variables-import-export-area
-    input[type='button']
-    + input[type='button'] {
-    margin-left: 0.5em;
-  }
-
-  .input-template-area {
-    flex: 1;
-    overflow-y: auto;
-    border: 1px #ccc;
-    border-style: solid none;
-  }
-
-  .input-template-area :global(.editor),
-  .output-area :global(.editor) {
-    width: 100%;
-    height: 100%;
-  }
-
-  .input-template-help {
-    margin: 0.5em 0;
-    text-align: right;
-    font-size: smaller;
-  }
-
-  .output-area {
-    justify-content: center; /* エラー表示の縦位置の中央揃え用 */
-    border: none 1px #ccc;
-    border-left-style: solid;
-  }
-
+  .variables-import-export-area,
+  .input-template-help,
   .html-export-area {
     margin: 0;
     border-top: solid 1px #ccc;
-    padding: 0.2em 0;
     text-align: right;
   }
 
-  .output-area .error {
+  .variables-import-export-area,
+  .html-export-area {
+    text-align: right;
+  }
+
+  .variables-import-export-area {
+    padding: 0.5em;
+  }
+
+  .variables-import-export-area input[type='button'] + input[type='button'] {
+    margin-left: 0.5em;
+  }
+
+  .html-export-area {
+    padding: 0.2em 0;
+  }
+
+  .input-template-help {
+    padding: 0.5em 0;
+    font-size: smaller;
+  }
+
+  .error {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* エラー表示の縦位置の中央揃え用 */
     max-width: 100%;
     box-sizing: border-box;
     margin: 0 auto; /* エラー表示の横位置の中央揃え用 */
     padding: 0 2em;
   }
 
-  .output-area .error strong {
+  .error strong {
     color: red;
   }
 
-  .output-area .error pre {
+  .error pre {
     overflow: auto;
   }
 </style>
