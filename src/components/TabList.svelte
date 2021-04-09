@@ -51,6 +51,7 @@
   }
 
   ul[role='tablist'] button {
+    cursor: pointer;
     height: 100%;
     border: solid 1px #ccc;
     background-color: inherit;
