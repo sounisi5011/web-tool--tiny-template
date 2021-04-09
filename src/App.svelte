@@ -1,9 +1,11 @@
 <script lang="ts">
   import 'codemirror/mode/xml/xml';
-  import 'codemirror/mode/handlebars/handlebars';
 
   import type { EventMap } from './components/CodeMirror.svelte';
   import CodeMirror from './components/CodeMirror.svelte';
+  import TabList from './components/TabList.svelte';
+  import TemplateEditor from './components/TemplateEditor.svelte';
+  import TemplateError from './components/TemplateError.svelte';
   import VariableInput from './components/VariableInput.svelte';
   import {
     templateText as defaultTemplateText,
@@ -41,16 +43,15 @@
   let outputData: ReturnType<typeof render>;
   $: outputData = render(compiledTemplate, variablesContext);
 
-  const tabSelectedMap: { template: null | 'L' | 'R' } = {
-    template: 'R',
-  };
+  let templateAreaTab: null | 'L' | 'R' = 'R';
 
-  const handleSelectTemplateTab = (areaType: 'L' | 'R') => () => {
-    tabSelectedMap.template = areaType;
-  };
-  const handleUnelectTemplateTab = (areaType: 'L' | 'R') => () => {
-    if (tabSelectedMap.template === areaType) {
-      tabSelectedMap.template = null;
+  const handleChangeTabList = (
+    areaType: Exclude<typeof templateAreaTab, null>,
+  ) => (event: CustomEvent<{ value: string }>) => {
+    if (event.detail.value === 'テンプレート') {
+      templateAreaTab = areaType;
+    } else if (templateAreaTab === areaType) {
+      templateAreaTab = null;
     }
   };
   const handleImportVariables = () => {
@@ -119,44 +120,16 @@
 
 <main>
   <div class="left-area">
-    <ul role="tablist">
-      <li role="presentation">
-        <button
-          role="tab"
-          aria-selected={tabSelectedMap.template === 'L'}
-          on:click={handleSelectTemplateTab('L')}>テンプレート</button
-        >
-      </li>
-      <li role="presentation">
-        <button
-          role="tab"
-          aria-selected={tabSelectedMap.template !== 'L'}
-          on:click={handleUnelectTemplateTab('L')}>変数</button
-        >
-      </li>
-    </ul>
-    {#if tabSelectedMap.template === 'L'}
-      <CodeMirror
-        mode="handlebars"
-        bind:value={templateText}
-        placeholder="テンプレートを入力"
-        lineWrapping
-        class="template-editor"
-      />
-      <p class="input-template-help">
-        テンプレートの言語は
-        <a href="https://handlebarsjs.com/" target="_blank">Handlebars</a>
-        です。
-      </p>
-    {:else if tabSelectedMap.template === 'R' && 'error' in outputData}
-      <div class="error">
-        <strong>テンプレートの変換が失敗しました。</strong>
-        <pre>{
-            outputData.error instanceof Error
-              ? `${outputData.error.name}\n${outputData.error.message}`
-              : `type: ${typeof outputData.error}\n${outputData.error}`
-          }</pre>
-      </div>
+    <TabList
+      class="tab-list"
+      valueList={['テンプレート', '変数']}
+      value={templateAreaTab === 'L' ? 'テンプレート' : '変数'}
+      on:change={handleChangeTabList('L')}
+    />
+    {#if templateAreaTab === 'L'}
+      <TemplateEditor editorClass="template-editor" bind:value={templateText} />
+    {:else if templateAreaTab === 'R' && 'error' in outputData}
+      <TemplateError class="error" error={outputData.error} />
     {:else}
       <div class="variables-input-area">
         {#if variableTypeStructure}
@@ -181,35 +154,14 @@
     {/if}
   </div>
   <div class="right-area">
-    <ul role="tablist">
-      <li role="presentation">
-        <button
-          role="tab"
-          aria-selected={tabSelectedMap.template === 'R'}
-          on:click={handleSelectTemplateTab('R')}>テンプレート</button
-        >
-      </li>
-      <li role="presentation">
-        <button
-          role="tab"
-          aria-selected={tabSelectedMap.template !== 'R'}
-          on:click={handleUnelectTemplateTab('R')}>HTML</button
-        >
-      </li>
-    </ul>
-    {#if tabSelectedMap.template === 'R'}
-      <CodeMirror
-        mode="handlebars"
-        bind:value={templateText}
-        placeholder="テンプレートを入力"
-        lineWrapping
-        class="template-editor"
-      />
-      <p class="input-template-help">
-        テンプレートの言語は
-        <a href="https://handlebarsjs.com/" target="_blank">Handlebars</a>
-        です。
-      </p>
+    <TabList
+      class="tab-list"
+      valueList={['テンプレート', 'HTML']}
+      value={templateAreaTab === 'R' ? 'テンプレート' : 'HTML'}
+      on:change={handleChangeTabList('R')}
+    />
+    {#if templateAreaTab === 'R'}
+      <TemplateEditor editorClass="template-editor" bind:value={templateText} />
     {:else if outputData.html !== undefined}
       <CodeMirror
         mode="text/html"
@@ -227,14 +179,7 @@
         />
       </p>
     {:else}
-      <div class="error">
-        <strong>テンプレートの変換が失敗しました。</strong>
-        <pre>{
-            outputData.error instanceof Error
-              ? `${outputData.error.name}\n${outputData.error.message}`
-              : `type: ${typeof outputData.error}\n${outputData.error}`
-          }</pre>
-      </div>
+      <TemplateError class="error" error={outputData.error} />
     {/if}
   </div>
 </main>
@@ -248,34 +193,17 @@
     margin: 0;
   }
 
+  :global(html),
+  * :global(.tab-list) {
+    background-color: white;
+    color: black;
+  }
+
   main {
     display: flex;
     box-sizing: border-box;
     border-top: solid 1px #ccc;
     border-bottom: solid 1px #ccc;
-  }
-
-  ul[role='tablist'] {
-    display: flex;
-    list-style: none;
-    margin: 0;
-    border-bottom: solid 1px #ccc;
-    padding: 0 0.5em;
-  }
-
-  ul[role='tablist'] li + li {
-    margin-left: 0.5em;
-  }
-
-  ul[role='tablist'] button {
-    height: 100%;
-    border: solid 1px #ccc;
-    background-color: white;
-    color: black;
-  }
-
-  ul[role='tablist'] button[aria-selected='true'] {
-    border-bottom-color: transparent;
   }
 
   .left-area,
@@ -288,8 +216,9 @@
     flex-direction: column;
   }
 
-  .left-area > ul[role='tablist'],
-  .right-area > ul[role='tablist'] {
+  /* コンポーネント内のスタイルを上書きするためには、クラスセレクターを重ねて詳細度を上げる必要がある */
+  .left-area > :global(.tab-list.tab-list.tab-list),
+  .right-area > :global(.tab-list.tab-list.tab-list) {
     margin-top: 0.5em;
   }
 
@@ -300,7 +229,7 @@
   .variables-input-area,
   * :global(.template-editor),
   * :global(.output-html-editor),
-  .error {
+  * :global(.error) {
     flex: 1;
   }
 
@@ -310,7 +239,6 @@
   }
 
   .variables-import-export-area,
-  .input-template-help,
   .html-export-area {
     margin: 0;
     border-top: solid 1px #ccc;
@@ -325,28 +253,5 @@
 
   .variables-import-export-area input[type='button'] + input[type='button'] {
     margin-left: 0.5em;
-  }
-
-  .input-template-help {
-    padding: 0.5em 0;
-    font-size: smaller;
-  }
-
-  .error {
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* エラー表示の縦位置の中央揃え用 */
-    max-width: 100%;
-    box-sizing: border-box;
-    margin: 0 auto; /* エラー表示の横位置の中央揃え用 */
-    padding: 0 2em;
-  }
-
-  .error strong {
-    color: red;
-  }
-
-  .error pre {
-    overflow: auto;
   }
 </style>
