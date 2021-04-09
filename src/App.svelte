@@ -319,19 +319,12 @@
 
   .variables-import-export-area,
   .html-export-area {
-    text-align: right;
-  }
-
-  .variables-import-export-area {
     padding: 0.5em;
+    text-align: right;
   }
 
   .variables-import-export-area input[type='button'] + input[type='button'] {
     margin-left: 0.5em;
-  }
-
-  .html-export-area {
-    padding: 0.2em 0;
   }
 
   .input-template-help {
