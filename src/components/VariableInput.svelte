@@ -282,7 +282,7 @@
 
   .child-items {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(10em, 100%), 1fr));
     gap: 0.5em;
   }
   .child-items > :global(*) {
