@@ -281,17 +281,15 @@
   }
 
   .child-items {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
     gap: 0.5em;
   }
   .child-items > :global(*) {
-    width: 100%;
     margin: 0;
   }
-  .child-items > :global(.primitive-type.has-label) {
-    flex: 1;
-    min-width: 10em;
+  .child-items > :global(:not(.primitive-type.has-label)) {
+    grid-column: 1 / -1;
   }
 
   .primitive-type {
