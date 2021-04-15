@@ -6,7 +6,7 @@ function getFullKey(key: string): string {
     return keyPrefix + key;
 }
 
-export function readData<T>(key: string, validateFn: (value: JsonValue) => value is T): { data: T } | undefined {
+export function readData<T>(key: string, validateFn: (value: unknown) => value is T): { data: T } | undefined {
     const fullKey = getFullKey(key);
     try {
         const dataString = localStorage.getItem(fullKey);
