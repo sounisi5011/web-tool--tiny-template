@@ -304,7 +304,7 @@
           参考：CSS Gridの中でSlickを利用すると画像がとんでもなく大きくはみ出る | SSSSSN https://sssssn.com/archives/657
     */
     grid-template-rows: minmax(0, 1fr) auto;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 50% 50%;
     box-sizing: border-box;
     border-top: solid 1px #ccc;
     border-bottom: solid 1px #ccc;
