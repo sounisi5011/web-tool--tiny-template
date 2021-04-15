@@ -343,14 +343,13 @@
   }
 
   .import-export-area {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-content: space-evenly;
+    gap: 0.5em;
     margin: 0;
-    padding: 0.5em 0;
-    padding-right: 0.5em;
-    text-align: right;
-  }
-
-  .import-export-area input[type='button'] + input[type='button'] {
-    margin-left: 0.5em;
+    padding: 0.5em;
   }
 
   .variables-import-export-area,
