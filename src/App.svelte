@@ -11,10 +11,30 @@
     templateText as defaultTemplateText,
     variablesRecord as defaultVariablesRecord,
   } from './data/default';
+  import { readData, saveData } from './data/localStorage';
   import Handlebars from './handlebars';
+  import { isObject } from './utils';
   import { downloadFile, pickFile } from './utils/dom';
   import { getVariableTypeStructure } from './utils/handlebars';
   import type { TypeNode } from './utils/handlebars/node';
+  import type { JsonValue } from './utils/type';
+
+  interface SavedData {
+    template: string;
+    variables: JsonValue;
+  }
+
+  function validateSavedData(value: unknown): value is SavedData {
+    /* eslint-disable dot-notation */
+    return (
+      isObject(value) &&
+      typeof value['template'] === 'string' &&
+      'variables' in value
+    );
+    /* eslint-enable */
+  }
+
+  const SAVE_KEY = 'all-data';
 
   function render(
     template: typeof compiledTemplate,
@@ -27,8 +47,13 @@
     }
   }
 
-  let variablesContext: unknown = defaultVariablesRecord;
-  let templateText: string = defaultTemplateText;
+  const savedData = readData(SAVE_KEY, validateSavedData);
+  let [variablesContext, templateText] = savedData
+    ? [savedData.data.variables, savedData.data.template]
+    : [defaultVariablesRecord, defaultTemplateText];
+  let dataSavedStatus: null | 'loaded' | 'saved' | 'save-fail' = savedData
+    ? 'loaded'
+    : null;
 
   let variableTypeStructure: TypeNode | undefined;
   $: {
@@ -42,6 +67,14 @@
 
   let outputData: ReturnType<typeof render>;
   $: outputData = render(compiledTemplate, variablesContext);
+
+  $: {
+    const saveSuccess = saveData<SavedData>(SAVE_KEY, {
+      template: templateText,
+      variables: variablesContext,
+    });
+    dataSavedStatus = saveSuccess ? 'saved' : 'save-fail';
+  }
 
   let templateAreaTab: null | 'L' | 'R' = 'R';
 
@@ -66,7 +99,7 @@
           return;
         }
 
-        let data: unknown;
+        let data: JsonValue;
         try {
           data = JSON.parse(result);
         } catch (error) {
