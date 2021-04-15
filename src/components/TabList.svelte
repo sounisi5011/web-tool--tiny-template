@@ -43,6 +43,7 @@
 
   ul[role='tablist'] li {
     margin-left: 0.5em;
+    margin-bottom: -1px;
     background-color: inherit;
   }
 
@@ -55,6 +56,7 @@
     height: 100%;
     border: solid 1px #ccc;
     background-color: #ccc;
+    vertical-align: bottom;
   }
 
   ul[role='tablist'] button[aria-selected='true'] {
