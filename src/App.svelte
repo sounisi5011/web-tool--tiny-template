@@ -51,9 +51,11 @@
   let [variablesContext, templateText] = savedData
     ? [savedData.data.variables, savedData.data.template]
     : [defaultVariablesRecord, defaultTemplateText];
-  let dataSavedStatus: null | 'loaded' | 'saved' | 'save-fail' = savedData
-    ? 'loaded'
-    : null;
+  let dataSavedStatus:
+    | null
+    | 'ロードしました'
+    | '一時保存しました'
+    | '一時保存が失敗しました' = savedData ? 'ロードしました' : null;
 
   let variableTypeStructure: TypeNode | undefined;
   $: {
@@ -73,7 +75,9 @@
       template: templateText,
       variables: variablesContext,
     });
-    dataSavedStatus = saveSuccess ? 'saved' : 'save-fail';
+    dataSavedStatus = saveSuccess
+      ? '一時保存しました'
+      : '一時保存が失敗しました';
   }
 
   let templateAreaTab: null | 'L' | 'R' = 'R';
@@ -160,7 +164,15 @@
       on:change={handleChangeTabList('L')}
     />
     {#if templateAreaTab === 'L'}
-      <TemplateEditor editorClass="template-editor" bind:value={templateText} />
+      <TemplateEditor editorClass="template-editor" bind:value={templateText}>
+        <p
+          slot="footer"
+          class="saved-status"
+          class:error={dataSavedStatus === '一時保存が失敗しました'}
+        >
+          {dataSavedStatus}
+        </p>
+      </TemplateEditor>
     {:else if templateAreaTab === 'R' && 'error' in outputData}
       <TemplateError class="error" error={outputData.error} />
     {:else}
@@ -172,18 +184,26 @@
           />
         {/if}
       </div>
-      <p class="variables-import-export-area">
-        <input
-          type="button"
-          value="変数をJSONからインポート"
-          on:click={handleImportVariables}
-        />
-        <input
-          type="button"
-          value="変数をJSONにエクスポート"
-          on:click={handleExportVariables}
-        />
-      </p>
+      <div class="variables-input-area-footer">
+        <p
+          class="saved-status"
+          class:error={dataSavedStatus === '一時保存が失敗しました'}
+        >
+          {dataSavedStatus}
+        </p>
+        <p class="variables-import-export-area">
+          <input
+            type="button"
+            value="変数をJSONからインポート"
+            on:click={handleImportVariables}
+          />
+          <input
+            type="button"
+            value="変数をJSONにエクスポート"
+            on:click={handleExportVariables}
+          />
+        </p>
+      </div>
     {/if}
   </div>
   <div class="right-area">
@@ -271,11 +291,9 @@
     padding: 0.5em;
   }
 
-  .variables-import-export-area,
+  .variables-input-area-footer,
   .html-export-area {
-    margin: 0;
     border-top: solid 1px #ccc;
-    text-align: right;
   }
 
   .variables-import-export-area,
@@ -284,7 +302,40 @@
     text-align: right;
   }
 
+  .variables-input-area-footer {
+    display: flex;
+  }
+
+  .variables-input-area-footer > * {
+    flex: auto;
+  }
+
+  .variables-import-export-area {
+    margin: auto 0;
+  }
+
   .variables-import-export-area input[type='button'] + input[type='button'] {
     margin-left: 0.5em;
+  }
+
+  .html-export-area {
+    margin: 0;
+  }
+
+  .saved-status {
+    margin: auto 0;
+    margin-left: 1em;
+    color: green;
+    font-size: small;
+  }
+  .saved-status::before {
+    content: '\2705\FE0F'; /* WHITE HEAVY CHECK MARK(U+2705)にVARIATION SELECTOR-16(U+FE0F)を追加し、常に絵文字として表示させる */
+    padding-right: 0.5em;
+  }
+  .saved-status.error {
+    color: crimson;
+  }
+  .saved-status.error::before {
+    content: '\274C\FE0F'; /* CROSS MARK(U+274C)にVARIATION SELECTOR-16(U+FE0F)を追加し、常に絵文字として表示させる */
   }
 </style>

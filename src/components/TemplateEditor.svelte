@@ -15,16 +15,23 @@
   lineWrapping
   class={editorClass}
 />
-<p class={helpClass} class:input-template-help={true}>
-  テンプレートの言語は
-  <a href="https://handlebarsjs.com/" target="_blank">Handlebars</a>
-  です。
-</p>
+<div class="footer">
+  <slot name="footer" />
+  <p class={helpClass} class:input-template-help={true}>
+    テンプレートの言語は
+    <a href="https://handlebarsjs.com/" target="_blank">Handlebars</a>
+    です。
+  </p>
+</div>
 
 <style>
-  .input-template-help {
-    margin: 0;
+  .footer {
+    display: flex;
     border-top: solid 1px #ccc;
+  }
+  .input-template-help {
+    flex: auto;
+    margin: auto 0;
     padding: 0.5em 0;
     text-align: right;
     font-size: smaller;
