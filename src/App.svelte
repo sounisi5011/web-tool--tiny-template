@@ -47,6 +47,36 @@
     }
   }
 
+  function readJson(reader: FileReader, callback: (data: JsonValue) => void) {
+    reader.addEventListener('load', () => {
+      const { result } = reader;
+      if (typeof result !== 'string') {
+        alert(
+          `ファイルの読み込みが失敗しました。FileReaderオブジェクトが、文字列ではない結果を返しました`,
+        );
+        return;
+      }
+
+      let data: JsonValue;
+      try {
+        data = JSON.parse(result);
+      } catch (error) {
+        alert(
+          `ファイルの読み込みが失敗しました。指定されたファイルは適切なJSONではありません:\n  ${error}`,
+        );
+        return;
+      }
+
+      callback(data);
+    });
+    reader.addEventListener('error', () => {
+      alert(`ファイルの読み込みが失敗しました:\n  ${reader.error}`);
+    });
+    reader.addEventListener('abort', () => {
+      alert(`ファイルの読み込みが中断されました`);
+    });
+  }
+
   const savedData = readData(SAVE_KEY, validateSavedData);
   let [variablesContext, templateText] = savedData
     ? [savedData.data.variables, savedData.data.template]
@@ -94,25 +124,7 @@
   const handleImportVariables = () => {
     pickFile({ accept: '.json' }, (file) => {
       const reader = new FileReader();
-      reader.addEventListener('load', () => {
-        const { result } = reader;
-        if (typeof result !== 'string') {
-          alert(
-            `ファイルの読み込みが失敗しました。FileReaderオブジェクトが、文字列ではない結果を返しました`,
-          );
-          return;
-        }
-
-        let data: JsonValue;
-        try {
-          data = JSON.parse(result);
-        } catch (error) {
-          alert(
-            `ファイルの読み込みが失敗しました。指定されたファイルは適切なJSONではありません:\n  ${error}`,
-          );
-          return;
-        }
-
+      readJson(reader, (data) => {
         if (
           confirm(
             `現在の変数の入力を消去し、ファイルで指定された変数で上書きします。よろしいですか？`,
@@ -120,12 +132,6 @@
         ) {
           variablesContext = data;
         }
-      });
-      reader.addEventListener('error', () => {
-        alert(`ファイルの読み込みが失敗しました:\n  ${reader.error}`);
-      });
-      reader.addEventListener('abort', () => {
-        alert(`ファイルの読み込みが中断されました`);
       });
       reader.readAsText(file);
     });
@@ -153,6 +159,41 @@
       event.currentTarget.select();
     }
   };
+
+  const handleImportAll = () => {
+    pickFile({ accept: '.json' }, (file) => {
+      const reader = new FileReader();
+      readJson(reader, (data) => {
+        if (!validateSavedData(data)) {
+          alert(
+            `ファイルの読み込みが失敗しました。インポートするJSONには、文字列値が指定された「template」プロパティと、変数のデータが指定された「variables」プロパティが必要です。`,
+          );
+          return;
+        }
+
+        if (
+          confirm(
+            `現在の入力内容を消去し、ファイルで指定されたテンプレートと変数で上書きします。よろしいですか？`,
+          )
+        ) {
+          templateText = data.template;
+          variablesContext = data.variables;
+        }
+      });
+      reader.readAsText(file);
+    });
+  };
+  const handleExportAll = () => {
+    const allData: SavedData = {
+      template: templateText,
+      variables: variablesContext,
+    };
+    downloadFile({
+      filename: 'all-data.json',
+      contents: JSON.stringify(allData, null, 2),
+      mime: 'application/json',
+    });
+  };
 </script>
 
 <main>
@@ -164,15 +205,7 @@
       on:change={handleChangeTabList('L')}
     />
     {#if templateAreaTab === 'L'}
-      <TemplateEditor editorClass="template-editor" bind:value={templateText}>
-        <p
-          slot="footer"
-          class="saved-status"
-          class:error={dataSavedStatus === '一時保存が失敗しました'}
-        >
-          {dataSavedStatus}
-        </p>
-      </TemplateEditor>
+      <TemplateEditor editorClass="template-editor" bind:value={templateText} />
     {:else if templateAreaTab === 'R' && 'error' in outputData}
       <TemplateError class="error" error={outputData.error} />
     {:else}
@@ -184,26 +217,18 @@
           />
         {/if}
       </div>
-      <div class="variables-input-area-footer">
-        <p
-          class="saved-status"
-          class:error={dataSavedStatus === '一時保存が失敗しました'}
-        >
-          {dataSavedStatus}
-        </p>
-        <p class="variables-import-export-area">
-          <input
-            type="button"
-            value="変数をJSONからインポート"
-            on:click={handleImportVariables}
-          />
-          <input
-            type="button"
-            value="変数をJSONにエクスポート"
-            on:click={handleExportVariables}
-          />
-        </p>
-      </div>
+      <p class="import-export-area variables-import-export-area">
+        <input
+          type="button"
+          value="変数をJSONからインポート"
+          on:click={handleImportVariables}
+        />
+        <input
+          type="button"
+          value="変数をJSONにエクスポート"
+          on:click={handleExportVariables}
+        />
+      </p>
     {/if}
   </div>
   <div class="right-area">
@@ -224,7 +249,7 @@
         on:focus={handleSelectAll}
         class="output-html-editor"
       />
-      <p class="html-export-area">
+      <p class="import-export-area html-export-area">
         <input
           type="button"
           value="HTMLをエクスポート"
@@ -234,6 +259,26 @@
     {:else}
       <TemplateError class="error" error={outputData.error} />
     {/if}
+  </div>
+  <div class="footer-area">
+    <p
+      class="saved-status"
+      class:error={dataSavedStatus === '一時保存が失敗しました'}
+    >
+      {dataSavedStatus}
+    </p>
+    <p class="import-export-area all-data-import-export-area">
+      <input
+        type="button"
+        value="全てのデータをJSONからインポート"
+        on:click={handleImportAll}
+      />
+      <input
+        type="button"
+        value="すべてのデータをJSONにエクスポート"
+        on:click={handleExportAll}
+      />
+    </p>
   </div>
 </main>
 
@@ -253,7 +298,13 @@
   }
 
   main {
-    display: flex;
+    display: grid;
+    /*
+    Note: なぜ`minmax(0, 1fr)`でうまくいくのか分からない。わからないが、コレで上手くいくのでとりあえず使っている。
+          参考：CSS Gridの中でSlickを利用すると画像がとんでもなく大きくはみ出る | SSSSSN https://sssssn.com/archives/657
+    */
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-columns: 1fr 1fr;
     box-sizing: border-box;
     border-top: solid 1px #ccc;
     border-bottom: solid 1px #ccc;
@@ -261,8 +312,6 @@
 
   .left-area,
   .right-area {
-    flex: 1;
-    width: 50%;
     box-sizing: border-box;
 
     display: flex;
@@ -291,35 +340,31 @@
     padding: 0.5em;
   }
 
-  .variables-input-area-footer,
-  .html-export-area {
-    border-top: solid 1px #ccc;
+  .import-export-area {
+    margin: 0;
+    padding: 0.5em 0;
+    padding-right: 0.5em;
+    text-align: right;
+  }
+
+  .import-export-area input[type='button'] + input[type='button'] {
+    margin-left: 0.5em;
   }
 
   .variables-import-export-area,
   .html-export-area {
-    padding: 0.5em;
-    text-align: right;
+    border-top: solid 1px #ccc;
   }
 
-  .variables-input-area-footer {
+  .footer-area {
+    grid-column: 1 / -1;
+
     display: flex;
+    border-top: solid 1px #ccc;
   }
 
-  .variables-input-area-footer > * {
+  .footer-area > .import-export-area {
     flex: auto;
-  }
-
-  .variables-import-export-area {
-    margin: auto 0;
-  }
-
-  .variables-import-export-area input[type='button'] + input[type='button'] {
-    margin-left: 0.5em;
-  }
-
-  .html-export-area {
-    margin: 0;
   }
 
   .saved-status {
