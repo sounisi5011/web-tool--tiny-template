@@ -313,6 +313,8 @@
   .left-area,
   .right-area {
     box-sizing: border-box;
+    overflow: hidden;
+    overflow: clip;
 
     display: flex;
     flex-direction: column;
