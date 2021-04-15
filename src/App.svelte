@@ -304,7 +304,7 @@
           参考：CSS Gridの中でSlickを利用すると画像がとんでもなく大きくはみ出る | SSSSSN https://sssssn.com/archives/657
     */
     grid-template-rows: minmax(0, 1fr) auto;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 50% 50%;
     box-sizing: border-box;
     border-top: solid 1px #ccc;
     border-bottom: solid 1px #ccc;
@@ -313,6 +313,8 @@
   .left-area,
   .right-area {
     box-sizing: border-box;
+    overflow: hidden;
+    overflow: clip;
 
     display: flex;
     flex-direction: column;
@@ -341,14 +343,13 @@
   }
 
   .import-export-area {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-content: space-evenly;
+    gap: 0.5em;
     margin: 0;
-    padding: 0.5em 0;
-    padding-right: 0.5em;
-    text-align: right;
-  }
-
-  .import-export-area input[type='button'] + input[type='button'] {
-    margin-left: 0.5em;
+    padding: 0.5em;
   }
 
   .variables-import-export-area,
