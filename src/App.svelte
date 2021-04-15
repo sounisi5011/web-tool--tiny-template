@@ -205,15 +205,7 @@
       on:change={handleChangeTabList('L')}
     />
     {#if templateAreaTab === 'L'}
-      <TemplateEditor editorClass="template-editor" bind:value={templateText}>
-        <p
-          slot="footer"
-          class="saved-status"
-          class:error={dataSavedStatus === '一時保存が失敗しました'}
-        >
-          {dataSavedStatus}
-        </p>
-      </TemplateEditor>
+      <TemplateEditor editorClass="template-editor" bind:value={templateText} />
     {:else if templateAreaTab === 'R' && 'error' in outputData}
       <TemplateError class="error" error={outputData.error} />
     {:else}
@@ -225,26 +217,18 @@
           />
         {/if}
       </div>
-      <div class="variables-input-area-footer">
-        <p
-          class="saved-status"
-          class:error={dataSavedStatus === '一時保存が失敗しました'}
-        >
-          {dataSavedStatus}
-        </p>
-        <p class="import-export-area variables-import-export-area">
-          <input
-            type="button"
-            value="変数をJSONからインポート"
-            on:click={handleImportVariables}
-          />
-          <input
-            type="button"
-            value="変数をJSONにエクスポート"
-            on:click={handleExportVariables}
-          />
-        </p>
-      </div>
+      <p class="import-export-area variables-import-export-area">
+        <input
+          type="button"
+          value="変数をJSONからインポート"
+          on:click={handleImportVariables}
+        />
+        <input
+          type="button"
+          value="変数をJSONにエクスポート"
+          on:click={handleExportVariables}
+        />
+      </p>
     {/if}
   </div>
   <div class="right-area">
@@ -367,24 +351,20 @@
     margin-left: 0.5em;
   }
 
-  .variables-input-area-footer,
+  .variables-import-export-area,
   .html-export-area {
     border-top: solid 1px #ccc;
   }
 
-  .variables-input-area-footer,
-  .footer-area {
-    display: flex;
-  }
-
-  .variables-input-area-footer > .import-export-area,
-  .footer-area > .import-export-area {
-    flex: auto;
-  }
-
   .footer-area {
     grid-column: 1 / -1;
+
+    display: flex;
     border-top: solid 1px #ccc;
+  }
+
+  .footer-area > .import-export-area {
+    flex: auto;
   }
 
   .saved-status {
